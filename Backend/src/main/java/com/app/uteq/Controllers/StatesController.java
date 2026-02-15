@@ -8,34 +8,37 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/states")
+@RequestMapping("/api/v1/states")
 @RequiredArgsConstructor
 public class StatesController {
     private final IStatesService service;
 
     // CREATE
-    @PostMapping("/sp-create")
+    @PostMapping
     public ResponseEntity<?> create(@RequestBody CStateRequest request) {
         service.createStates(request);
         return ResponseEntity.ok("Estado creado correctamente");
     }
 
     // UPDATE
-    @PutMapping("/sp-update")
-    public ResponseEntity<?> update(@RequestBody UStateRequest request) {
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(
+            @PathVariable Integer id,
+            @RequestBody UStateRequest request) {
+        request.setIdstate(id);
         service.updateStates(request);
         return ResponseEntity.ok("Estado actualizado correctamente");
     }
 
     // DELETE
-    @DeleteMapping("/sp-delete/{idstate}")
+    @DeleteMapping("/{idstate}")
     public ResponseEntity<?> delete(@PathVariable Integer idstate) {
         service.deleteStates(idstate);
         return ResponseEntity.ok("Estado eliminado correctamente");
     }
 
     // LIST
-    @GetMapping("/list")
+    @GetMapping
     public ResponseEntity<?> list(@RequestParam(required = false) String category) {
         return ResponseEntity.ok(service.listStates(category));
     }

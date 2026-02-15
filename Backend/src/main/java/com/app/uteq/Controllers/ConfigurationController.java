@@ -8,30 +8,33 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/configuration")
+@RequestMapping("/api/v1/configuration")
 @RequiredArgsConstructor
 public class ConfigurationController {
     private final IConfigurationService service;
 
-    @PostMapping("/sp-create")
+    @PostMapping
     public ResponseEntity<?> create(@RequestBody CConfigurationRequest request) {
         service.createConfiguration(request);
         return ResponseEntity.ok("Configuración creada correctamente");
     }
 
-    @PutMapping("/sp-update")
-    public ResponseEntity<?> update(@RequestBody UConfigurationRequest request) {
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(
+            @PathVariable Integer id,
+            @RequestBody UConfigurationRequest request) {
+        request.setIdconfiguration(id);
         service.updateConfiguration(request);
         return ResponseEntity.ok("Configuración actualizada correctamente");
     }
 
-    @DeleteMapping("/sp-delete/{idconfiguration}")
+    @DeleteMapping("{idconfiguration}")
     public ResponseEntity<?> delete(@PathVariable Integer idconfiguration) {
         service.deleteConfiguration(idconfiguration);
         return ResponseEntity.ok("Configuración eliminada correctamente");
     }
 
-    @GetMapping("/list")
+    @GetMapping("")
     public ResponseEntity<?> list() {
         return ResponseEntity.ok(service.listConfiguration());
     }

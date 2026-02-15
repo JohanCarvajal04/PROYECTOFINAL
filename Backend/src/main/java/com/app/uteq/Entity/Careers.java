@@ -8,9 +8,10 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@Table
+@Table(name = "careers")
 @AllArgsConstructor
 @NoArgsConstructor
+
 public class Careers {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,5 +29,9 @@ public class Careers {
     @JsonIgnore
     private Faculties faculty;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coordinatoriduser")
+    @JsonIgnore
+    private Users coordinator;
 
 }

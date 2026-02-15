@@ -8,14 +8,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/academic-calendar")
+@RequestMapping("/api/v1/academic-calendar")
 @RequiredArgsConstructor
 public class AcademicCalendarController {
 
     private final IAcademicCalendarService service;
 
-    @PostMapping("/sp-create")
-    public ResponseEntity<?> crearCalendario(@RequestBody IAcademicCalendarRequest request){
+    @PostMapping
+    public ResponseEntity<?> createCalendar(@RequestBody IAcademicCalendarRequest request){
 
         service.createcalendar(
                 request.getCalendarname(),
@@ -28,20 +28,23 @@ public class AcademicCalendarController {
         return ResponseEntity.ok("Calendario creado correctamente");
     }
 
-    @PutMapping("/sp-update")
-    public ResponseEntity<?> actualizar(@RequestBody UAcademicCalendarRequest request) {
+    @PutMapping("/{idacademiccalendar}")
+    public ResponseEntity<?> actualizar(
+            @PathVariable Integer idacademiccalendar,
+            @RequestBody UAcademicCalendarRequest request) {
+        request.setIdacademiccalendar(idacademiccalendar);
         service.modifycalendar(request);
         return ResponseEntity.ok("Calendario actualizado correctamente");
     }
 
 
-    @DeleteMapping("/sp-delete/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<?> eliminar(@PathVariable Integer id) {
         service.deletecalendar(id);
         return ResponseEntity.ok("Calendario eliminado correctamente");
     }
 
-    @GetMapping("/list")
+    @GetMapping()
     public ResponseEntity<?> listar(@RequestParam(required = false) Boolean onlyActive) {
         return ResponseEntity.ok(service.listarCalendarios(onlyActive));
     }

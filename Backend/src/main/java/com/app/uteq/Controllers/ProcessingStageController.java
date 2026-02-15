@@ -8,34 +8,37 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/processing-stages")
+@RequestMapping("/api/v1/processing-stages")
 @RequiredArgsConstructor
 public class ProcessingStageController {
     private final IProcessingStageService service;
 
     // CREATE -> spi_processingstage
-    @PostMapping("/sp-create")
+    @PostMapping
     public ResponseEntity<?> create(@RequestBody CProcessingStageRequest request) {
         service.createProcessingstage(request);
         return ResponseEntity.ok("ProcessingStage creado correctamente");
     }
 
     // UPDATE -> spu_processingstage
-    @PutMapping("/sp-update")
-    public ResponseEntity<?> update(@RequestBody UProcessingStageRequest request) {
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(
+            @PathVariable Integer id,
+            @RequestBody UProcessingStageRequest request) {
+        request.setIdprocessingstage(id);
         service.updateProcessingstage(request);
         return ResponseEntity.ok("ProcessingStage actualizado correctamente");
     }
 
     // DELETE -> spd_processingstage
-    @DeleteMapping("/sp-delete/{idprocessingstage}")
+    @DeleteMapping("/{idprocessingstage}")
     public ResponseEntity<?> delete(@PathVariable Integer idprocessingstage) {
         service.deleteProcessingstage(idprocessingstage);
         return ResponseEntity.ok("ProcessingStage eliminado correctamente");
     }
 
     // LIST -> fn_list_processingstage
-    @GetMapping("/list")
+    @GetMapping
     public ResponseEntity<?> list() {
         return ResponseEntity.ok(service.listProcessingstage());
     }

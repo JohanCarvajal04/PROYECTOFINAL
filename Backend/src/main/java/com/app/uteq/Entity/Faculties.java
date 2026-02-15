@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@Table
+@Table(name = "faculties")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -25,5 +25,9 @@ public class Faculties {
     @Column(name = "facultycode", length = 50)
     private String facultyCode;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deaniduser")
+    @JsonIgnore
+    private Users dean;
 
 }
