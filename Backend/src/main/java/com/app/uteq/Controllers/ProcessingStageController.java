@@ -6,10 +6,12 @@ import com.app.uteq.Services.IProcessingStageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/processing-stages")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class ProcessingStageController {
     private final IProcessingStageService service;
 

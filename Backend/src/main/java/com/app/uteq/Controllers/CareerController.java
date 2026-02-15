@@ -6,10 +6,12 @@ import com.app.uteq.Services.ICareersService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/careers")
+@PreAuthorize("isAuthenticated()")
 public class CareerController {
     private final ICareersService service;
 

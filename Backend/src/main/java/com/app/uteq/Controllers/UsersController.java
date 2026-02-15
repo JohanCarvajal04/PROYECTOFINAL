@@ -7,10 +7,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
+@PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
 public class UsersController {
     private final IUsersService service;
 

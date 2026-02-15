@@ -6,10 +6,12 @@ import com.app.uteq.Services.IDocumentTemplatesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/document-templates")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class DocumentTemplateController {
     private final IDocumentTemplatesService service;
 

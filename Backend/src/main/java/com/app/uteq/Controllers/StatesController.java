@@ -6,10 +6,12 @@ import com.app.uteq.Services.IStatesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/states")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class StatesController {
     private final IStatesService service;
 

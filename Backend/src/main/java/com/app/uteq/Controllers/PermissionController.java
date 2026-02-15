@@ -6,10 +6,12 @@ import com.app.uteq.Services.IPermissionsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/permissions")
 @RequiredArgsConstructor
+@PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
 public class PermissionController {
     private final IPermissionsService service;
 

@@ -7,10 +7,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/refresh-tokens")
+@PreAuthorize("isAuthenticated()")
 public class RefreshTokenController {
     private final IRefreshTokenService service;
 

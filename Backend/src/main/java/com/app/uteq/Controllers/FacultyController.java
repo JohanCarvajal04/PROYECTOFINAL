@@ -6,10 +6,12 @@ import com.app.uteq.Services.IFacultiesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/faculty")
 @RequiredArgsConstructor
+@PreAuthorize("isAuthenticated()")
 public class FacultyController {
     private final IFacultiesService service;
 
