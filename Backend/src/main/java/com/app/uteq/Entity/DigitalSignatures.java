@@ -45,6 +45,7 @@ public class DigitalSignatures {
     private String signatureAlgorithm;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @Column(name = "createdat", nullable = false)

@@ -33,6 +33,7 @@ public class RequirementsOfTheProcedure {
     private String requirementType;
 
     @Column(name = "ismandatory", nullable = false)
+    @Builder.Default
     private Boolean isMandatory = true;
 
     @Column(name = "displayorder")

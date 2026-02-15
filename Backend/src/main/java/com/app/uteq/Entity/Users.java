@@ -40,6 +40,7 @@ public class Users {
     private String phoneNumber;
 
     @Column(name = "statement", nullable = false)
+    @Builder.Default
     private Boolean statement = true;
 
     @ManyToOne
@@ -57,5 +58,10 @@ public class Users {
     private LocalDateTime updatedAt;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private Boolean active = true;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "iduser"), inverseJoinColumns = @JoinColumn(name = "idrole"))
+    private Set<Roles> roles;
 }

@@ -1,53 +1,44 @@
 package com.app.uteq.Entity;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.TemporalType;
+import java.time.LocalDate;
 
+@Entity
+@Data
+@Table(name = "students")
+@AllArgsConstructor
+    @NoArgsConstructor
+@Builder
 public class Students {
-@Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer idstudent;
 
-    @Column(nullable = false)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "idstudent")
+    private Integer id;
+
+    @Column(name = "semester", nullable = false, length = 255)
     private String semester;
 
-    @Column(nullable = false, length = 1)
+    @Column(name = "parallel", nullable = false, length = 1)
     private String parallel;
 
-    @Column(name = "enrollment_number", nullable = false, length = 20)
-    private String enrollmentNumber;
-
-    @Column(name = "academic_period", length = 50)
-    private String academicPeriod;
-
-    @Temporal(TemporalType.DATE)
-    private Date enrollmentdate;
-
-    @Column(nullable = false)
-    private String status = "active"; // active, inactive, graduated
-
-    @Column(nullable = false)
-    private Boolean active = true;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    // Relación con el Usuario base
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "usersiduser", nullable = false)
-    private User user;
+    private Users user;
 
-    // Relación con la Carrera
     @ManyToOne
     @JoinColumn(name = "careersidcareer", nullable = false)
-    private Career career;
+    private Careers career;
 
+    @Column(name = "enrollmentdate")
+    private LocalDate enrollmentDate;
+
+    @Column(name = "status", nullable = false, length = 50)
+    @Builder.Default
+    private String status = "active";
 }

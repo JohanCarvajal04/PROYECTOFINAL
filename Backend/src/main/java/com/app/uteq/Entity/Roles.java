@@ -1,12 +1,12 @@
 package com.app.uteq.Entity;
 
-import java.util.Set;
-
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.Set;
 
 @Entity
 @Table(name = "roles")
@@ -18,16 +18,14 @@ public class Roles {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer idrole;
+    @Column(name = "idrole")
+    private Integer idRole;
 
-    @Column(unique = true, nullable = false)
-    private String rolename;
+    @Column(name = "rolename", unique = true, nullable = false, length = 100)
+    private String roleName;
 
-    @Column(name = "description")
-    private String description;
-
-    @Column(name = "active")
-    private Boolean active = true;
+    @Column(name = "roledescription", columnDefinition = "TEXT")
+    private String roleDescription;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "idrole"), inverseJoinColumns = @JoinColumn(name = "idpermission"))

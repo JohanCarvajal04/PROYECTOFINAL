@@ -27,6 +27,7 @@ public class TwoFactorAuth {
     private Credentials credentials;
 
     @Column(name = "enabled", nullable = false)
+    @Builder.Default
     private Boolean enabled = false;
 
     @Column(name = "secretkey", columnDefinition = "TEXT")

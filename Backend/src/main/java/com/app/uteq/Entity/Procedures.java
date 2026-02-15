@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table
+@Table(name = "procedures")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -57,6 +57,4 @@ public class Procedures {
     @Column(name = "createdat", nullable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updatedat")
-    private LocalDateTime updatedAt;
 }

@@ -57,5 +57,6 @@ public class Applications {
     private Users applicantUser;
 
     @Column(name = "priority", length = 20, nullable = false)
+    @Builder.Default
     private String priority = "normal";
 }

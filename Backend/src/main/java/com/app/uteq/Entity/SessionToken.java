@@ -1,19 +1,12 @@
 package com.app.uteq.Entity;
 
-import java.time.LocalDateTime;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -32,8 +25,21 @@ public class SessionToken {
     @JoinColumn(name = "userid", nullable = false)
     private Users user;
 
-    private String ipaddress;
-    private String useragent;
-    private LocalDateTime expiresat;
-    private Boolean isactive = true;
+    @Column(name = "token", nullable = false, unique = true, columnDefinition = "TEXT")
+    private String token;
+
+    @Column(name = "ipaddress", length = 45)
+    private String ipAddress;
+
+    @Column(name = "useragent", columnDefinition = "TEXT")
+    private String userAgent;
+
+    @Column(name = "createdat", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "expiresat", nullable = false)
+    private LocalDateTime expiresAt;
+
+    @Column(name = "lastactivity")
+    private LocalDateTime lastActivity;
 }

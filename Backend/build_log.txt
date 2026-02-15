@@ -13,8 +13,8 @@
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD FAILURE
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  0.980 s
-[INFO] Finished at: 2026-02-15T14:34:24-05:00
+[INFO] Total time:  1.089 s
+[INFO] Finished at: 2026-02-15T15:22:38-05:00
 [INFO] ------------------------------------------------------------------------
 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-resources-plugin:3.3.1:resources (default-resources) on project uteq: filtering C:\Users\1EASU5653\Desktop\Repo\PROYECTOFINAL\Backend\src\main\resources\application.properties to C:\Users\1EASU5653\Desktop\Repo\PROYECTOFINAL\Backend\target\classes\application.properties failed with MalformedInputException: Input length = 1 -> [Help 1]
 [ERROR] 

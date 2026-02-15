@@ -43,6 +43,7 @@ public class Notification {
     private LocalDateTime sentAt;
 
     @Column(name = "deliverystatus", nullable = false, length = 50)
+    @Builder.Default
     private String deliveryStatus = "pending";
 
     @Column(name = "deliverychannel", length = 50)
@@ -55,5 +56,6 @@ public class Notification {
     private String errorMessage;
 
     @Column(name = "retrycount", nullable = false)
+    @Builder.Default
     private Integer retryCount = 0;
 }

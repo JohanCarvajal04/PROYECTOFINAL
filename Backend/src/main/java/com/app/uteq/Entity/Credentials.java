@@ -32,14 +32,14 @@ public class Credentials {
     private LocalDateTime lastLogin;
 
     @Column(name = "failedattempts", nullable = false)
+    @Builder.Default
     private Integer failedAttempts = 0;
 
     @Column(name = "accountlocked", nullable = false)
+    @Builder.Default
     private Boolean accountLocked = false;
 
     @Column(name = "passwordexpirydate")
     private LocalDate passwordExpiryDate;
 
-    @Column(name = "active", nullable = false)
-    private Boolean active = true;
 }
