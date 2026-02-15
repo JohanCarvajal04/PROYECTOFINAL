@@ -7,7 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table
+@Table(name = "processingstage")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
