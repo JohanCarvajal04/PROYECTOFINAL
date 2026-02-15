@@ -7,13 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
-@Entity
 @Data
-@Table
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Entity
+@Table(name = "users")
 public class Users {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,10 +27,10 @@ public class Users {
     @Column(name = "surnames", nullable = false, length = 255)
     private String surnames;
 
-    @Column(name = "cardid", nullable = false, length = 10)
+    @Column(name = "cardid", nullable = false, length = 10, unique = true)
     private String cardId;
 
-    @Column(name = "institutionalemail", nullable = false, length = 255)
+    @Column(name = "institutionalemail", nullable = false, length = 255, unique = true)
     private String institutionalEmail;
 
     @Column(name = "personalmail", length = 255, unique = true)
@@ -41,7 +42,13 @@ public class Users {
     @Column(name = "statement", nullable = false)
     private Boolean statement = true;
 
+    @ManyToOne
+    @JoinColumn(name = "configurationsidconfiguration", nullable = false)
+    private Configurations configuration;
 
+    @OneToOne
+    @JoinColumn(name = "credentialsidcredentials")
+    private Credentials credentials;
 
     @Column(name = "createdat", nullable = false)
     private LocalDateTime createdAt;

@@ -1,0 +1,25 @@
+﻿[INFO] Scanning for projects...
+[INFO] 
+[INFO] ----------------------------< com.app:uteq >----------------------------
+[INFO] Building Backend 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ uteq ---
+[INFO] Deleting C:\Users\1EASU5653\Desktop\Repo\PROYECTOFINAL\Backend\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ uteq ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  0.980 s
+[INFO] Finished at: 2026-02-15T14:34:24-05:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-resources-plugin:3.3.1:resources (default-resources) on project uteq: filtering C:\Users\1EASU5653\Desktop\Repo\PROYECTOFINAL\Backend\src\main\resources\application.properties to C:\Users\1EASU5653\Desktop\Repo\PROYECTOFINAL\Backend\target\classes\application.properties failed with MalformedInputException: Input length = 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

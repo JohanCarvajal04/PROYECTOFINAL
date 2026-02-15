@@ -1,5 +1,7 @@
 package com.app.uteq.Entity;
 
+import java.util.Set;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,7 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table
+@Table(name = "roles")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -16,13 +18,18 @@ public class Roles {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "idrole")
-    private Integer idRole;
+    private Integer idrole;
 
-    @Column(name = "rolename", nullable = false, length = 100, unique = true)
-    private String roleName;
+    @Column(unique = true, nullable = false)
+    private String rolename;
 
-    @Column(name = "roledescription")
-    private String roleDescription;
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "active")
+    private Boolean active = true;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "idrole"), inverseJoinColumns = @JoinColumn(name = "idpermission"))
+    private Set<Permissions> permissions;
 }
-
