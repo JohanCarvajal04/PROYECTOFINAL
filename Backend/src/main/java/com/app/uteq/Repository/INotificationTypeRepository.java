@@ -1,4 +1,7 @@
 package com.app.uteq.Repository;
 
-public interface INotificationTypeRepository {
+import com.app.uteq.Entity.NotificationType;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface INotificationTypeRepository extends JpaRepository<NotificationType, Integer> {
 }

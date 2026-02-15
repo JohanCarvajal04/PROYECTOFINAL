@@ -1,4 +1,7 @@
 package com.app.uteq.Repository;
 
-public interface IRolesRepository {
+import com.app.uteq.Entity.Roles;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface IRolesRepository extends JpaRepository<Roles, Integer> {
 }

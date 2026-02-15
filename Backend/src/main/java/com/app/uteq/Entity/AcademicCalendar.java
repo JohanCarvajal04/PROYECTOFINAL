@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.Date;
 
 @Entity
 @Table(name = "academiccalendar")
@@ -34,6 +33,7 @@ public class AcademicCalendar {
     private LocalDate endDate;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
 }

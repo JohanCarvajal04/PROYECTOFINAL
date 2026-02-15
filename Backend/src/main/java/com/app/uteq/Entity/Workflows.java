@@ -8,12 +8,12 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
- @Entity
- @Table(name = "workflows")
- @Data
- @AllArgsConstructor
- @NoArgsConstructor
- @Builder
+@Entity
+@Table(name = "workflows")
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class Workflows {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,5 +30,6 @@ public class Workflows {
     private LocalDateTime createdAt;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private Boolean active = true;
 }

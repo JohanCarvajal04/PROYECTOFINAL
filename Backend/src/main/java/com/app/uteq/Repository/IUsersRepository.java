@@ -1,4 +1,7 @@
 package com.app.uteq.Repository;
 
-public interface IUsersRepository {
+import com.app.uteq.Entity.Users;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface IUsersRepository extends JpaRepository<Users, Integer> {
 }

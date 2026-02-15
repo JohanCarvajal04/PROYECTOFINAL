@@ -36,9 +36,11 @@ public class DocumentTemplates {
     private String version;
 
     @Column(name = "requiressignature", nullable = false)
+    @Builder.Default
     private Boolean requiresSignature = false;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @Column(name = "createdat", nullable = false)

@@ -49,9 +49,11 @@ public class Procedures {
     private Integer estimatedDurationDays;
 
     @Column(name = "requires2fa", nullable = false)
+    @Builder.Default
     private Boolean requires2fa = false;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private Boolean active = true;
 
     @Column(name = "createdat", nullable = false)

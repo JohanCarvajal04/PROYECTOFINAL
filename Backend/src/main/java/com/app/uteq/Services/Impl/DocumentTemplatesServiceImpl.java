@@ -17,6 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DocumentTemplatesServiceImpl implements IDocumentTemplatesService {
     private final IDocumentTemplatesRepository repository;
+
     @Override
     public void createDocumenttemplate(CDocumentTemplateRequest request) {
         repository.spiDocumentTemplate(
@@ -26,8 +27,7 @@ public class DocumentTemplatesServiceImpl implements IDocumentTemplatesService {
                 request.getDocumenttype(),
                 request.getVersion(),
                 request.getRequiressignature(),
-                request.getActive()
-        );
+                request.getActive());
     }
 
     @Override
@@ -40,8 +40,7 @@ public class DocumentTemplatesServiceImpl implements IDocumentTemplatesService {
                 request.getDocumenttype(),
                 request.getVersion(),
                 request.getRequiressignature(),
-                request.getActive()
-        );
+                request.getActive());
     }
 
     @Override
@@ -63,14 +62,16 @@ public class DocumentTemplatesServiceImpl implements IDocumentTemplatesService {
                 toBool(r[6]),
                 toBool(r[7]),
                 toLocalDateTime(r[8]),
-                toLocalDateTime(r[9])
-        )).toList();
+                toLocalDateTime(r[9]))).toList();
     }
 
     private Integer toInt(Object v) {
-        if (v == null) return null;
-        if (v instanceof Integer i) return i;
-        if (v instanceof Number n) return n.intValue();
+        if (v == null)
+            return null;
+        if (v instanceof Integer i)
+            return i;
+        if (v instanceof Number n)
+            return n.intValue();
         throw new IllegalArgumentException("Tipo numérico no soportado: " + v.getClass());
     }
 
@@ -79,18 +80,25 @@ public class DocumentTemplatesServiceImpl implements IDocumentTemplatesService {
     }
 
     private Boolean toBool(Object v) {
-        if (v == null) return null;
-        if (v instanceof Boolean b) return b;
-        if (v instanceof Number n) return n.intValue() != 0;
+        if (v == null)
+            return null;
+        if (v instanceof Boolean b)
+            return b;
+        if (v instanceof Number n)
+            return n.intValue() != 0;
         return Boolean.parseBoolean(v.toString());
     }
 
     private LocalDateTime toLocalDateTime(Object v) {
-        if (v == null) return null;
-        if (v instanceof LocalDateTime ldt) return ldt;
-        if (v instanceof Timestamp ts) return ts.toLocalDateTime();
+        if (v == null)
+            return null;
+        if (v instanceof LocalDateTime ldt)
+            return ldt;
+        if (v instanceof Timestamp ts)
+            return ts.toLocalDateTime();
         // por si llega como java.util.Date
-        if (v instanceof java.util.Date d) return new Timestamp(d.getTime()).toLocalDateTime();
+        if (v instanceof java.util.Date d)
+            return new Timestamp(d.getTime()).toLocalDateTime();
         throw new IllegalArgumentException("Tipo timestamp no soportado: " + v.getClass());
     }
 }

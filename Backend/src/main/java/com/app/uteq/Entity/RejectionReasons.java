@@ -28,5 +28,6 @@ public class RejectionReasons {
     private String category;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private Boolean active = true;
 }

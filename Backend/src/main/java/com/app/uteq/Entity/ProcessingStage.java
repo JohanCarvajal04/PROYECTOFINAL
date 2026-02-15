@@ -32,6 +32,7 @@ public class ProcessingStage {
     private Integer stageOrder;
 
     @Column(name = "requiresapproval", nullable = false)
+    @Builder.Default
     private Boolean requiresApproval = false;
 
     @Column(name = "maxdurationdays")

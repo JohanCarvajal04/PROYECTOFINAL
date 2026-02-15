@@ -1,4 +1,7 @@
 package com.app.uteq.Repository;
 
-public interface IProceduresRepository {
+import com.app.uteq.Entity.Procedures;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface IProceduresRepository extends JpaRepository<Procedures, Integer> {
 }

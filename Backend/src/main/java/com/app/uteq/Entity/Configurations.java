@@ -25,14 +25,18 @@ public class Configurations {
     private String signaturePath;
 
     @Column(name = "enable_sms", nullable = false)
+    @Builder.Default
     private Boolean enableSms = false;
 
     @Column(name = "enable_email", nullable = false)
+    @Builder.Default
     private Boolean enableEmail = true;
 
     @Column(name = "enable_whatsapp", nullable = false)
+    @Builder.Default
     private Boolean enableWhatsapp = false;
 
     @Column(name = "notificationfrequency", length = 50, nullable = false)
+    @Builder.Default
     private String notificationFrequency = "real_time";
 }

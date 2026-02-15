@@ -28,8 +28,10 @@ public class DeadLinerules {
     private Integer baseDeadlineDays;
 
     @Column(name = "warningdaysbefore", nullable = false)
+    @Builder.Default
     private Integer warningDaysBefore = 3;
 
     @Column(name = "active", nullable = false)
+    @Builder.Default
     private Boolean active = true;
 }
