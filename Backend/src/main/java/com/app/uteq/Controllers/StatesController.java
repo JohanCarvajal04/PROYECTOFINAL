@@ -1,12 +1,33 @@
 package com.app.uteq.Controllers;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.app.uteq.Dtos.CStateRequest;
 import com.app.uteq.Dtos.UStateRequest;
 import com.app.uteq.Services.IStatesService;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/states")
@@ -17,7 +38,7 @@ public class StatesController {
 
     // CREATE
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CStateRequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody CStateRequest request) {
         service.createStates(request);
         return ResponseEntity.ok("Estado creado correctamente");
     }
@@ -26,7 +47,7 @@ public class StatesController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @RequestBody UStateRequest request) {
+            @Valid @RequestBody UStateRequest request) {
         request.setIdstate(id);
         service.updateStates(request);
         return ResponseEntity.ok("Estado actualizado correctamente");

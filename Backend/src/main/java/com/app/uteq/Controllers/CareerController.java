@@ -1,12 +1,23 @@
 package com.app.uteq.Controllers;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.app.uteq.Dtos.CCareersRequest;
 import com.app.uteq.Dtos.UCareersRequest;
 import com.app.uteq.Services.ICareersService;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,7 +28,7 @@ public class CareerController {
 
     // CREATE
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CCareersRequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody CCareersRequest request) {
         service.createCareers(request);
         return ResponseEntity.ok("Carrera creada correctamente");
     }
@@ -26,7 +37,7 @@ public class CareerController {
     @PutMapping("/{idcareer}")
     public ResponseEntity<?> update(
             @PathVariable Integer idcareer,
-            @RequestBody UCareersRequest request) {
+            @Valid @RequestBody UCareersRequest request) {
 
         request.setIdcareer(idcareer);
         service.updateCareers(request);

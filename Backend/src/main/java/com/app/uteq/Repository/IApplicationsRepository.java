@@ -17,5 +17,7 @@ public interface IApplicationsRepository extends JpaRepository<Applications, Int
 
     List<Applications> findByPriority(String priority);
 
+    List<Applications> findByProcedureIdProcedure(Integer procedureId);
+
     boolean existsByApplicationCode(String applicationCode);
 }

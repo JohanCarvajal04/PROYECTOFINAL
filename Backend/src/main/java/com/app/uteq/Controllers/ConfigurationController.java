@@ -1,12 +1,22 @@
 package com.app.uteq.Controllers;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.app.uteq.Dtos.CConfigurationRequest;
 import com.app.uteq.Dtos.UConfigurationRequest;
 import com.app.uteq.Services.IConfigurationService;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/configuration")
@@ -16,7 +26,7 @@ public class ConfigurationController {
     private final IConfigurationService service;
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CConfigurationRequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody CConfigurationRequest request) {
         service.createConfiguration(request);
         return ResponseEntity.ok("Configuración creada correctamente");
     }
@@ -24,7 +34,7 @@ public class ConfigurationController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @RequestBody UConfigurationRequest request) {
+            @Valid @RequestBody UConfigurationRequest request) {
         request.setIdconfiguration(id);
         service.updateConfiguration(request);
         return ResponseEntity.ok("Configuración actualizada correctamente");

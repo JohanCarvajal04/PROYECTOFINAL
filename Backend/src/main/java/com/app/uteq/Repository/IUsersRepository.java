@@ -19,6 +19,8 @@ public interface IUsersRepository extends JpaRepository<Users, Integer> {
 
     List<Users> findByActiveFalse();
 
+    List<Users> findByRolesIdRole(Integer roleId);
+
     boolean existsByInstitutionalEmail(String institutionalEmail);
 
     boolean existsByCardId(String cardId);

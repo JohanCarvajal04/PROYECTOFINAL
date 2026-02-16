@@ -1,12 +1,23 @@
 package com.app.uteq.Controllers;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.app.uteq.Dtos.CWorkflowRequest;
 import com.app.uteq.Dtos.UWorkflowRequest;
 import com.app.uteq.Services.IWorkflowsService;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/work-flows")
@@ -17,7 +28,7 @@ public class WorkFlowsController {
 
     // CREATE -> spi_workflow
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CWorkflowRequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody CWorkflowRequest request) {
         service.createWorkflow(request);
         return ResponseEntity.ok("Workflow creado correctamente");
     }
@@ -26,7 +37,7 @@ public class WorkFlowsController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @RequestBody UWorkflowRequest request) {
+            @Valid @RequestBody UWorkflowRequest request) {
         request.setIdworkflow(id);
         service.updateWorkflow(request);
         return ResponseEntity.ok("Workflow actualizado correctamente");
