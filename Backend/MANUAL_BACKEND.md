@@ -1,7 +1,8 @@
 # SGTE Backend — Manual Técnico Completo
 
 > **Sistema de Gestión de Trámites Estudiantiles (SGTE)**  
-> Backend desarrollado con Spring Boot 3.2.2 · Java 21 · PostgreSQL
+> Backend desarrollado con Spring Boot 3.2.2 · Java 21 · PostgreSQL  
+> Última actualización: Febrero 2026
 
 ---
 
@@ -10,54 +11,73 @@
 1. [Visión General y Arquitectura](#1-visión-general-y-arquitectura)
 2. [Archivos Raíz](#2-archivos-raíz)
 3. [Configuración (Config)](#3-configuración-config)
-4. [Entidades (Entity)](#4-entidades-entity)
-5. [Repositorios (Repository)](#5-repositorios-repository)
-6. [Servicios — Interfaces (Services)](#6-servicios--interfaces-services)
-7. [Servicios — Implementaciones (Services/Impl)](#7-servicios--implementaciones-servicesimpl)
-8. [Controladores (Controllers)](#8-controladores-controllers)
-9. [DTOs (Data Transfer Objects)](#9-dtos-data-transfer-objects)
-10. [Excepciones (Exceptions)](#10-excepciones-exceptions)
-11. [Diagrama de Relaciones entre Entidades](#11-diagrama-de-relaciones-entre-entidades)
+4. [Seguridad y Autenticación](#4-seguridad-y-autenticación)
+5. [Entidades (Entity)](#5-entidades-entity)
+6. [Repositorios (Repository)](#6-repositorios-repository)
+7. [Servicios — Interfaces (Services)](#7-servicios--interfaces-services)
+8. [Servicios — Implementaciones (Services/Impl)](#8-servicios--implementaciones-servicesimpl)
+9. [Controladores (Controllers)](#9-controladores-controllers)
+10. [DTOs (Data Transfer Objects)](#10-dtos-data-transfer-objects)
+11. [Excepciones y Manejo Global de Errores](#11-excepciones-y-manejo-global-de-errores)
+12. [Configuración de application.properties](#12-configuración-de-applicationproperties)
+13. [Dependencias Maven (pom.xml)](#13-dependencias-maven-pomxml)
+14. [Diagrama de Relaciones entre Entidades](#14-diagrama-de-relaciones-entre-entidades)
+15. [Catálogo de Permisos](#15-catálogo-de-permisos)
+16. [Resumen Estadístico del Proyecto](#16-resumen-estadístico-del-proyecto)
 
 ---
 
 ## 1. Visión General y Arquitectura
 
-### Stack Tecnológico
+### 1.1 Stack Tecnológico
 
-| Componente | Tecnología |
-|---|---|
-| Framework | Spring Boot 3.2.2 |
-| Lenguaje | Java 21 |
-| Base de datos | PostgreSQL |
-| Seguridad | Spring Security + OAuth2 Resource Server (JWT RS256) |
-| Autenticación 2FA | Google Authenticator (TOTP) vía `googleauth:1.5.0` |
-| Validación | Jakarta Bean Validation (`spring-boot-starter-validation`) |
-| Build | Maven |
-| Reducción de boilerplate | Lombok |
+| Componente | Tecnología | Versión |
+|---|---|---|
+| Framework | Spring Boot | 3.2.2 |
+| Lenguaje | Java | 21 |
+| Base de datos | PostgreSQL | - |
+| Seguridad | Spring Security + OAuth2 Resource Server (JWT RS256) | - |
+| Autenticación 2FA | Google Authenticator (TOTP) vía `googleauth` | 1.5.0 |
+| Validación | Jakarta Bean Validation (`spring-boot-starter-validation`) | - |
+| Build | Maven | - |
+| Reducción boilerplate | Lombok | - |
+| Criptografía | BouncyCastle (`bcpkix-jdk18on`) | 1.83 |
+| Driver BD | PostgreSQL JDBC | runtime |
 
-### Arquitectura en Capas
+### 1.2 Arquitectura en Capas
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Controladores (30)                     │
-│         Reciben HTTP, validan DTOs, delegan a servicios  │
-├─────────────────────────────────────────────────────────┤
-│                 Servicios — Interfaces (29)               │
-│              Contratos de las operaciones de negocio      │
-├─────────────────────────────────────────────────────────┤
-│              Servicios — Implementaciones (29+1)          │
-│        Lógica de negocio, validaciones, transformación    │
-├─────────────────────────────────────────────────────────┤
-│                    Repositorios (29)                      │
-│     JpaRepository + Queries derivadas / Stored Procs     │
-├─────────────────────────────────────────────────────────┤
-│                     Entidades (29)                        │
-│              Mapeo ORM a tablas PostgreSQL                │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      CAPA DE PRESENTACIÓN                       │
+│                       Controladores (30)                        │
+│  Reciben HTTP, validan DTOs con @Valid, delegan a servicios     │
+│  Seguridad: @PreAuthorize("isAuthenticated()") a nivel clase    │
+│  + @PreAuthorize("hasAuthority('XXX')") a nivel método          │
+├─────────────────────────────────────────────────────────────────┤
+│                     CAPA DE NEGOCIO                             │
+│                Servicios — Interfaces (29)                      │
+│            Contratos de las operaciones de negocio              │
+├─────────────────────────────────────────────────────────────────┤
+│                  CAPA DE IMPLEMENTACIÓN                         │
+│            Servicios — Implementaciones (29+1)                  │
+│   Lógica de negocio, validaciones, transformación a DTOs        │
+│   Todos anotados con @Service @RequiredArgsConstructor          │
+│   y @Transactional (soporte transaccional)                      │
+├─────────────────────────────────────────────────────────────────┤
+│                    CAPA DE DATOS                                │
+│                   Repositorios (29)                              │
+│       JpaRepository + Queries derivadas / Stored Procs          │
+│  11 repos → Procedimientos Almacenados (catálogos)              │
+│  18 repos → JPA directo (entidades de negocio)                  │
+├─────────────────────────────────────────────────────────────────┤
+│                   CAPA DE PERSISTENCIA                          │
+│                     Entidades (29)                               │
+│              Mapeo ORM a tablas PostgreSQL                       │
+│          Lombok @Data/@Builder + JPA @Entity                    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Roles del Sistema
+### 1.3 Roles del Sistema
 
 | Rol | Descripción |
 |---|---|
@@ -66,26 +86,55 @@
 | `ROLE_COORDINATOR` | Coordinador de carrera, gestiona estudiantes y trámites |
 | `ROLE_DEAN` | Decano de facultad, aprueba operaciones académicas |
 
-### Patrones de Acceso a Datos
+### 1.4 Sistema de Permisos
+
+El backend implementa un sistema de seguridad basado en **permisos granulares**:
+
+1. Cada `Rol` tiene asociado un conjunto de `Permissions` (relación M:N tabla `role_permissions`)
+2. `CustomUserDetailsService` carga roles + permisos individuales como `GrantedAuthority`
+3. Los controladores usan `@PreAuthorize("hasAuthority('CODIGO_PERMISO')")` en cada método
+4. Aprox. **140 códigos de permisos únicos** en el sistema
+
+### 1.5 Patrones de Acceso a Datos
 
 El backend implementa **dos patrones** de acceso a datos que coexisten:
 
-- **Patrón A — Stored Procedures (SP):** Entidades de catálogo (calendarios, carreras, facultades, etc.) delegan todas las operaciones CRUD a procedimientos almacenados y funciones de PostgreSQL. Los resultados `Object[]` se mapean manualmente a DTOs.
-- **Patrón B — JPA directo:** Entidades de negocio principales (usuarios, estudiantes, solicitudes, procedimientos, roles, credenciales) utilizan `JpaRepository` con queries derivadas, validación rica y lógica de dominio.
+| Patrón | Entidades | Cantidad | Descripción |
+|---|---|---|---|
+| **A — Stored Procedures (SP)** | Catálogos | 11 repos | Operaciones CRUD delegadas a `CALL spi_*`, `CALL spu_*`, `CALL spd_*` y `SELECT * FROM fn_list_*`. Resultados `Object[]` mapeados con `SpResultConverter` a DTOs de respuesta. |
+| **B — JPA directo** | Negocio | 18 repos | `JpaRepository` con queries derivadas, `.save()`, `.findById()`, `.deleteById()`. Validación rica y lógica de dominio compleja. |
+
+**Servicios con Patrón SP (11):** AcademicCalendar, Careers, Configuration, DeadLineRules, DocumentTemplates, Faculties, Permissions, ProcessingStage, RejectionReasons, States, Workflows
+
+**Servicios con Patrón JPA (18):** Applications, ApplicationStageHistory, AttachedDocuments, Credentials, DigitalSignatures, DocumentsGenerated, Notification, NotificationType, Procedures, RefreshToken, RequirementsOfTheProcedure, Roles, SessionToken, StageTracking, Students, TwoFactorAuth, Users, WorkflowStages
 
 ---
 
 ## 2. Archivos Raíz
 
-### `BackendApplication.java`
+### 2.1 `BackendApplication.java`
 
 Punto de entrada principal de la aplicación Spring Boot.
 
-- Anotación: `@SpringBootApplication`
+```java
+@SpringBootApplication
+@EnableConfigurationProperties(RsaKeyConfig.class)
+public class BackendApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(BackendApplication.class, args);
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
 - Habilita la lectura de claves RSA mediante `@EnableConfigurationProperties(RsaKeyConfig.class)`
 - Define el bean `PasswordEncoder` usando `BCryptPasswordEncoder` para el hashing seguro de contraseñas
 
-### `GenerateKeyPair.java`
+### 2.2 `GenerateKeyPair.java`
 
 Utilidad standalone (no es un bean de Spring) para generar un par de claves RSA de 2048 bits.
 
@@ -98,61 +147,210 @@ Utilidad standalone (no es un bean de Spring) para generar un par de claves RSA 
 
 ## 3. Configuración (Config)
 
-### `RsaKeyConfig.java`
+### 3.1 `RsaKeyConfig.java`
 
-Record de Java que vincula las propiedades `rsa.public-key` y `rsa.private-key` del `application.properties` a objetos `RSAPublicKey` / `RSAPrivateKey`. Spring auto-parsea los archivos PEM a objetos RSA tipados.
+Record de Java que vincula las propiedades `rsa.public-key` y `rsa.private-key` del `application.properties` a objetos RSA tipados.
 
 ```java
 @ConfigurationProperties(prefix = "rsa")
 public record RsaKeyConfig(RSAPublicKey publicKey, RSAPrivateKey privateKey) {}
 ```
 
-### `SecurityConfig.java`
+Spring Boot automáticamente lee los archivos PEM, parsea el contenido y lo inyecta como objetos `RSAPublicKey` / `RSAPrivateKey`.
 
-Configuración central de seguridad de la aplicación.
+### 3.2 `SecurityConfig.java`
 
-- **Anotaciones:** `@EnableWebSecurity`, `@EnableMethodSecurity` (habilita `@PreAuthorize` a nivel método)
-- **AuthenticationManager:** `DaoAuthenticationProvider` con `CustomUserDetailsService` + BCrypt
-- **SecurityFilterChain:**
-  - CORS habilitado (orígenes configurables vía propiedad `cors.allowed-origins`)
-  - CSRF deshabilitado (API stateless basada en JWT)
-  - Endpoints públicos: `/api/v1/auth/**`, `/api/v1/2fa/validate`, `/api/v1/2fa/validate-backup`
-  - Todos los demás endpoints requieren autenticación
-  - OAuth2 Resource Server con JWT
-  - `SessionCreationPolicy.STATELESS`
-- **JWT Converter personalizado:** Convierte el claim `scope` del JWT en autoridades duales (`SCOPE_ROLE_X` + `ROLE_X`), permitiendo que tanto `hasRole('ADMIN')` como `hasAuthority('SCOPE_ROLE_ADMIN')` funcionen correctamente
-- **JwtDecoder:** `NimbusJwtDecoder` con clave pública RSA
-- **JwtEncoder:** `NimbusJwtEncoder` con par de claves RSA
+Configuración central de seguridad. **161 líneas**, 7 beans.
 
-### `SpResultConverter.java`
+**Anotaciones de clase:**
+- `@Configuration`
+- `@EnableWebSecurity`
+- `@EnableMethodSecurity` — habilita `@PreAuthorize` a nivel método
+
+**Beans definidos:**
+
+| Bean | Descripción |
+|---|---|
+| `AuthenticationManager` | `DaoAuthenticationProvider` con `CustomUserDetailsService` + BCrypt |
+| `SecurityFilterChain` | Cadena de filtros HTTP (CORS, CSRF off, JWT, STATELESS) |
+| `CorsConfigurationSource` | Orígenes configurables vía `cors.allowed-origins` |
+| `JwtAuthenticationConverter` | Converter personalizado de claims JWT a authorities |
+| `jwtGrantedAuthoritiesConverter` | Convierte claim `scope` a authorities duales |
+| `JwtDecoder` | `NimbusJwtDecoder` con clave pública RSA |
+| `JwtEncoder` | `NimbusJwtEncoder` con par de claves RSA |
+
+**Reglas de Autorización (SecurityFilterChain):**
+
+| Patrón URL | Acceso |
+|---|---|
+| `/api/v1/auth/**` | `permitAll()` |
+| `/api/v1/2fa/validate` | `permitAll()` |
+| `/api/v1/2fa/validate-backup` | `permitAll()` |
+| Cualquier otro | `authenticated()` |
+
+**JWT Converter personalizado:** Convierte el claim `scope` del JWT en autoridades duales:
+- `SCOPE_ROLE_ADMIN` → para `hasAuthority('SCOPE_ROLE_ADMIN')`
+- `ROLE_ADMIN` → para `hasRole('ADMIN')`
+- Permisos individuales como `CAL_CREAR` → para `hasAuthority('CAL_CREAR')`
+
+**Configuración de sesiones:** `SessionCreationPolicy.STATELESS` — sin sesiones HTTP, cada request se autentica vía JWT.
+
+### 3.3 `SpResultConverter.java`
 
 Clase de utilidad estática para convertir resultados `Object[]` de Stored Procedures a valores Java tipados.
 
-| Método | Descripción |
+| Método | Entrada → Salida |
 |---|---|
-| `toInt(Object)` | Convierte a `Integer` |
-| `toStr(Object)` | Convierte a `String` |
-| `toBool(Object)` | Convierte a `Boolean` |
-| `toLocalDateTime(Object)` | Convierte a `LocalDateTime` |
-| `toLocalDate(Object)` | Convierte a `LocalDate` |
+| `toInt(Object)` | `Number` → `Integer` |
+| `toStr(Object)` | `Object` → `String` |
+| `toBool(Object)` | `Number/Boolean` → `Boolean` |
+| `toLocalDateTime(Object)` | `Timestamp/Date` → `LocalDateTime` |
+| `toLocalDate(Object)` | `sql.Date/util.Date` → `LocalDate` |
 
-Utilizada por las implementaciones de servicios basados en Stored Procedures para evitar duplicación de código de conversión.
+Maneja `null` de forma segura. Utilizada por las implementaciones de servicios SP para evitar duplicación de código.
 
-### `StringListConverter.java`
+### 3.4 `StringListConverter.java`
 
-JPA `AttributeConverter<List<String>, String>` que almacena una `List<String>` como texto delimitado por comas en la base de datos. Utilizado por la entidad `TwoFactorAuth` para persistir los códigos de respaldo de 2FA.
+JPA `AttributeConverter<List<String>, String>` que almacena una `List<String>` como texto delimitado por comas en la base de datos.
+
+```java
+@Converter
+public class StringListConverter implements AttributeConverter<List<String>, String> {
+    // convertToDatabaseColumn: List<"a","b","c"> → "a,b,c"  
+    // convertToEntityAttribute: "a,b,c" → List<"a","b","c">
+}
+```
+
+Utilizado por la entidad `TwoFactorAuth` para persistir los códigos de respaldo de 2FA.
 
 ---
 
-## 4. Entidades (Entity)
+## 4. Seguridad y Autenticación
 
-Todas las entidades son clases JPA anotadas con `@Entity` y `@Table`. Utilizan Lombok para reducir boilerplate.
+### 4.1 `CustomUserDetailsService.java`
 
-### 4.1 `AcademicCalendar`
+**Ubicación:** `Services/Impl/` · **Anotaciones:** `@Service`, `@Transactional(readOnly = true)`
 
-**Tabla:** `academiccalendar` · **Lombok:** `@Data`, `@Builder`
+Implementa `UserDetailsService` de Spring Security. Es el puente entre la base de datos y el sistema de autenticación.
 
-Representa un período académico con fechas de inicio y fin.
+**Flujo de `loadUserByUsername(email)`:**
+
+1. Busca usuario por `institutionalEmail` en `IUsersRepository`
+2. Valida que existan credenciales asociadas
+3. Construye las `GrantedAuthority`:
+   - Para cada rol del usuario: `ROLE_XXX` (ej: `ROLE_ADMIN`)
+   - Para cada permiso de cada rol: código del permiso (ej: `CAL_CREAR`, `SOL_LISTAR`)
+   - Permisos deduplicados vía `Set`
+4. Retorna `org.springframework.security.core.userdetails.User` con:
+   - `username` = email institucional
+   - `password` = hash BCrypt
+   - `authorities` = roles + permisos
+   - `accountNonLocked` = `!credentials.accountLocked`
+   - `enabled` = `user.active`
+
+### 4.2 `AuthController.java`
+
+**Base path:** `/api/v1/auth` · **226 líneas** · Sin `@PreAuthorize` (endpoints públicos)
+
+| Endpoint | Método | Descripción |
+|---|---|---|
+| `POST /token` | `generateToken()` | Genera JWT (access + refresh token) |
+| `POST /2fa-verify` | `verify2FA()` | Verifica código 2FA y genera tokens completos |
+| `POST /logout` | `logout()` | Revoca todos los refresh tokens del usuario |
+
+**Flujo de autenticación con `POST /token`:**
+
+```
+1. Cliente envía grantType=password, username, password, withRefreshToken
+2. AuthenticationManager autentica (DaoAuthenticationProvider + BCrypt)
+3. Si falla → registerFailedAttempt (puede bloquear cuenta tras 5 intentos)
+4. Si éxito → registerSuccessfulLogin (resetea contador de intentos)
+5. Verifica si usuario tiene 2FA habilitado:
+   a. SI → genera pre_auth_token (JWT de 5 min con claim requires_2fa=true)
+           retorna {pre_auth_token, requires_2fa: true}
+   b. NO → genera tokens completos (access 15min + refresh 24h)
+6. Para grantType=refresh_token → decodifica, valida, rota refresh token
+```
+
+**Flujo de `POST /2fa-verify`:**
+
+```
+1. Recibe preAuthToken + code (TOTP) o backupCode
+2. Decodifica preAuthToken, valida que sea tipo "pre_auth"
+3. Valida código TOTP via twoFactorAuthService.validateCode() 
+   o código de respaldo via twoFactorAuthService.validateBackupCode()
+4. Si válido → genera tokens completos (access + refresh)
+5. Si inválido → 401 "Código 2FA inválido"
+```
+
+**Estructura de JWT generados:**
+
+| Campo | Access Token | Refresh Token | Pre-Auth Token |
+|---|---|---|---|
+| `subject` | email | email | email |
+| `issuer` | sgte-backend | sgte-backend | sgte-backend |
+| `expiresAt` | +15 minutos | +24 horas | +5 minutos |
+| `scope` | roles + permisos | roles + permisos | — |
+| `token_type` | access_token | refresh_token | pre_auth |
+| `requires_2fa` | — | — | true |
+
+### 4.3 `TwoFactorAuthController.java`
+
+**Base path:** `/api/v1/2fa` · **121 líneas**
+
+| Endpoint | Método | Permiso | Descripción |
+|---|---|---|---|
+| `POST /setup` | `setup()` | `AUTH2FA_CONFIGURAR` | Genera clave secreta + QR URI + 8 backup codes |
+| `POST /verify` | `verify()` | `AUTH2FA_VERIFICAR` | Primera verificación TOTP → activa 2FA |
+| `DELETE /disable` | `disable()` | `AUTH2FA_DESACTIVAR` | Desactiva 2FA (requiere código TOTP) |
+| `GET /status` | `status()` | `AUTH2FA_ESTADO` | Consulta estado de 2FA |
+| `POST /backup-codes/regenerate` | `regenerateBackupCodes()` | `AUTH2FA_REGENERAR` | Regenera backup codes |
+| `POST /validate` | `validateCode()` | Público | Valida TOTP durante login |
+| `POST /validate-backup` | `validateBackupCode()` | Público | Valida backup code durante login |
+
+### 4.4 Flujo Completo de Login
+
+```
+┌──────────┐     POST /auth/token      ┌──────────────┐
+│  Cliente  │ ──────────────────────── → │ AuthController │
+└──────────┘  grantType=password        └──────┬───────┘
+                                               │
+                                    ┌──────────▼──────────┐
+                                    │ AuthenticationManager│
+                                    │ (BCrypt + UserDetails)│
+                                    └──────────┬──────────┘
+                                               │
+                                    ┌──────────▼──────────┐
+                                    │ ¿2FA habilitado?     │
+                                    └──┬──────────────┬───┘
+                                  SI   │              │  NO
+                          ┌────────────▼─┐    ┌───────▼────────┐
+                          │ pre_auth_token│    │ access_token   │
+                          │ (5 min)       │    │ refresh_token  │
+                          └────────┬─────┘    └────────────────┘
+                                   │
+                    POST /auth/2fa-verify
+                          │
+                   ┌──────▼──────┐
+                   │ Verificar   │
+                   │ TOTP/Backup │
+                   └──────┬──────┘
+                          │ válido
+                   ┌──────▼────────┐
+                   │ access_token  │
+                   │ refresh_token │
+                   └───────────────┘
+```
+
+---
+
+## 5. Entidades (Entity)
+
+Todas las entidades son clases JPA anotadas con `@Entity` y `@Table`. Utilizan Lombok para reducir boilerplate. Total: **29 entidades**.
+
+### 5.1 `AcademicCalendar`
+
+**Tabla:** `academiccalendar` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -167,11 +365,9 @@ Representa un período académico con fechas de inicio y fin.
 
 ---
 
-### 4.2 `Applications`
+### 5.2 `Applications`
 
-**Tabla:** `applications` · **Lombok:** `@Data`, `@Builder`
-
-Representa una solicitud o trámite estudiantil.
+**Tabla:** `applications` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -179,7 +375,7 @@ Representa una solicitud o trámite estudiantil.
 | applicationCode | String | `applicationcode` | NOT NULL, UNIQUE, length=100 |
 | creationDate | LocalDateTime | `creationdate` | NOT NULL |
 | estimatedCompletionDate | LocalDate | `estimatedcompletiondate` | NOT NULL |
-| actualCompletionDate | LocalDateTime | `actualcompletiondate` | nullable |
+| actualCompletionDate | LocalDateTime | `actualcompletiondate` | Nullable |
 | applicationDetails | String | `applicationdetails` | TEXT |
 | applicationResolution | String | `applicationresolution` | TEXT |
 | priority | String | `priority` | NOT NULL, length=20, default=`"normal"` |
@@ -195,17 +391,15 @@ Representa una solicitud o trámite estudiantil.
 
 ---
 
-### 4.3 `ApplicationStageHistory`
+### 5.3 `ApplicationStageHistory`
 
-**Tabla:** `applicationstagehistory` · **Lombok:** `@Data`, `@Builder`
-
-Historial de las etapas por las que pasa una solicitud.
+**Tabla:** `applicationstagehistory` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | id | Integer | `idhistory` | PK, auto-increment |
 | enteredAt | LocalDateTime | `enteredat` | NOT NULL |
-| exitedAt | LocalDateTime | `exitedat` | nullable |
+| exitedAt | LocalDateTime | `exitedat` | Nullable |
 | comments | String | `comments` | TEXT |
 
 **Relaciones:**
@@ -218,11 +412,9 @@ Historial de las etapas por las que pasa una solicitud.
 
 ---
 
-### 4.4 `AttachedDocuments`
+### 5.4 `AttachedDocuments`
 
-**Tabla:** `attacheddocuments` · **Lombok:** `@Data`, `@Builder`
-
-Documentos adjuntos subidos por usuarios como requisitos de una solicitud.
+**Tabla:** `attacheddocuments` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -243,11 +435,9 @@ Documentos adjuntos subidos por usuarios como requisitos de una solicitud.
 
 ---
 
-### 4.5 `Careers`
+### 5.5 `Careers`
 
-**Tabla:** `careers` · **Lombok:** `@Data`, `@Builder`
-
-Carreras universitarias ofrecidas por las facultades.
+**Tabla:** `careers` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -257,18 +447,16 @@ Carreras universitarias ofrecidas por las facultades.
 
 **Relaciones:**
 
-| Tipo | Campo | Entidad destino | FK | Extra |
-|---|---|---|---|---|
-| @ManyToOne | faculty | Faculties | `facultiesidfaculty` | LAZY, @JsonIgnore |
-| @ManyToOne | coordinator | Users | `coordinatoriduser` (nullable) | LAZY, @JsonIgnore |
+| Tipo | Campo | Entidad destino | FK |
+|---|---|---|---|
+| @ManyToOne (LAZY) | faculty | Faculties | `facultiesidfaculty` (@JsonIgnore) |
+| @ManyToOne (LAZY) | coordinator | Users | `coordinatoriduser` (@JsonIgnore) |
 
 ---
 
-### 4.6 `Configurations`
+### 5.6 `Configurations`
 
-**Tabla:** `configurations` · **Lombok:** `@Data`, `@Builder`
-
-Configuración de preferencias de usuario (notificaciones, foto de perfil, firma).
+**Tabla:** `configurations` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -284,31 +472,27 @@ Configuración de preferencias de usuario (notificaciones, foto de perfil, firma
 
 ---
 
-### 4.7 `Credentials`
+### 5.7 `Credentials`
 
-**Tabla:** `credentials` · **Lombok:** `@Data`, `@Builder`
-
-Credenciales de acceso de un usuario (contraseña hasheada, intentos fallidos, bloqueo).
+**Tabla:** `credentials` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | id | Integer | `idcredentials` | PK, auto-increment |
 | passwordHash | String | `passwordhash` | NOT NULL |
-| dateModification | LocalDateTime | `datemodification` | nullable |
-| lastLogin | LocalDateTime | `lastlogin` | nullable |
+| dateModification | LocalDateTime | `datemodification` | Nullable |
+| lastLogin | LocalDateTime | `lastlogin` | Nullable |
 | failedAttempts | Integer | `failedattempts` | NOT NULL, default=`0` |
 | accountLocked | Boolean | `accountlocked` | NOT NULL, default=`false` |
-| passwordExpiryDate | LocalDate | `passwordexpirydate` | nullable |
+| passwordExpiryDate | LocalDate | `passwordexpirydate` | Nullable |
 
-**Relaciones:** Ninguna (referenciada por Users vía @OneToOne y por TwoFactorAuth)
+**Relaciones:** Ninguna (referenciada por `Users.credentials` y `TwoFactorAuth.credentials`)
 
 ---
 
-### 4.8 `DeadLinerules`
+### 5.8 `DeadLinerules`
 
-**Tabla:** `deadlinerules` · **Lombok:** `@Data`, `@Builder`
-
-Reglas de plazo que definen los tiempos máximos de resolución según categoría de trámite.
+**Tabla:** `deadlinerules` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -323,11 +507,9 @@ Reglas de plazo que definen los tiempos máximos de resolución según categorí
 
 ---
 
-### 4.9 `DigitalSignatures`
+### 5.9 `DigitalSignatures`
 
-**Tabla:** `digitalsignatures` · **Lombok:** `@Data`, `@Builder`
-
-Firmas digitales vinculadas a certificados de usuario.
+**Tabla:** `digitalsignatures` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -349,11 +531,9 @@ Firmas digitales vinculadas a certificados de usuario.
 
 ---
 
-### 4.10 `DocumentsGenerated`
+### 5.10 `DocumentsGenerated`
 
-**Tabla:** `documentsgenerated` · **Lombok:** `@Data`, `@Builder`
-
-Documentos generados a partir de plantillas como resultado de un trámite.
+**Tabla:** `documentsgenerated` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -361,7 +541,7 @@ Documentos generados a partir de plantillas como resultado de un trámite.
 | documentType | String | `documenttype` | NOT NULL, length=255 |
 | documentPath | String | `documentpath` | NOT NULL, length=500 |
 | generatedAt | LocalDateTime | `generatedat` | NOT NULL |
-| signatureTimestamp | LocalDateTime | `signaturetimestamp` | nullable |
+| signatureTimestamp | LocalDateTime | `signaturetimestamp` | Nullable |
 
 **Relaciones:**
 
@@ -374,11 +554,9 @@ Documentos generados a partir de plantillas como resultado de un trámite.
 
 ---
 
-### 4.11 `DocumentTemplates`
+### 5.11 `DocumentTemplates`
 
-**Tabla:** `documenttemplates` · **Lombok:** `@Data`, `@Builder`
-
-Plantillas de documentos que pueden usarse para generar documentos oficiales.
+**Tabla:** `documenttemplates` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -391,17 +569,15 @@ Plantillas de documentos que pueden usarse para generar documentos oficiales.
 | requiresSignature | Boolean | `requiressignature` | NOT NULL, default=`false` |
 | active | Boolean | `active` | NOT NULL, default=`true` |
 | createdAt | LocalDateTime | `createdat` | NOT NULL |
-| updatedAt | LocalDateTime | `updatedat` | nullable |
+| updatedAt | LocalDateTime | `updatedat` | Nullable |
 
 **Relaciones:** Ninguna
 
 ---
 
-### 4.12 `Faculties`
+### 5.12 `Faculties`
 
-**Tabla:** `faculties` · **Lombok:** `@Data`, `@Builder`
-
-Facultades de la universidad.
+**Tabla:** `faculties` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -411,27 +587,25 @@ Facultades de la universidad.
 
 **Relaciones:**
 
-| Tipo | Campo | Entidad destino | FK | Extra |
-|---|---|---|---|---|
-| @ManyToOne | dean | Users | `deaniduser` (nullable) | LAZY, @JsonIgnore |
+| Tipo | Campo | Entidad destino | FK |
+|---|---|---|---|
+| @ManyToOne (LAZY) | dean | Users | `deaniduser` (@JsonIgnore, nullable) |
 
 ---
 
-### 4.13 `Notification`
+### 5.13 `Notification`
 
-**Tabla:** `notification` · **Lombok:** `@Data`, `@Builder`
-
-Notificaciones enviadas a usuarios del sistema.
+**Tabla:** `notification` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | id | Integer | `idnotification` | PK, auto-increment |
 | notificationName | String | `notificationname` | NOT NULL, length=255 |
 | message | String | `message` | TEXT |
-| sentAt | LocalDateTime | `sentat` | nullable |
+| sentAt | LocalDateTime | `sentat` | Nullable |
 | deliveryStatus | String | `deliverystatus` | NOT NULL, length=50, default=`"pending"` |
 | deliveryChannel | String | `deliverychannel` | length=50 |
-| readAt | LocalDateTime | `readat` | nullable |
+| readAt | LocalDateTime | `readat` | Nullable |
 | errorMessage | String | `errormessage` | TEXT |
 | retryCount | Integer | `retrycount` | NOT NULL, default=`0` |
 
@@ -445,11 +619,9 @@ Notificaciones enviadas a usuarios del sistema.
 
 ---
 
-### 4.14 `NotificationType`
+### 5.14 `NotificationType`
 
-**Tabla:** `notificationtype` · **Lombok:** `@Data`, `@Builder`
-
-Tipos/categorías de notificaciones.
+**Tabla:** `notificationtype` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -462,74 +634,66 @@ Tipos/categorías de notificaciones.
 
 ---
 
-### 4.15 `Permissions`
+### 5.15 `Permissions`
 
-**Tabla:** `permissions` · **Lombok:** `@Data`, `@Builder`
-
-Permisos granulares asignables a roles.
+**Tabla:** `permissions` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | idPermission | Integer | `idpermission` | PK, auto-increment |
 | code | String | `code` | NOT NULL, UNIQUE, length=100 |
-| description | String | `description` | nullable |
+| description | String | `description` | Nullable |
 
-**Relaciones:** Ninguna (referenciada por Roles vía ManyToMany)
+**Relaciones:** Referenciado por `Roles.permissions` (M:N)
 
 ---
 
-### 4.16 `Procedures`
+### 5.16 `Procedures`
 
-**Tabla:** `procedures` · **Lombok:** `@Data`, `@Builder`
-
-Tipos de trámites que los estudiantes pueden solicitar.
+**Tabla:** `procedures` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | idProcedure | Integer | `idprocedure` | PK, auto-increment |
 | nameProcedure | String | `nameprocedure` | NOT NULL, length=255 |
 | procedureCode | String | `procedurecode` | NOT NULL, UNIQUE, length=50 |
-| description | String | `description` | nullable |
-| estimatedDurationDays | Integer | `estimateddurationdays` | nullable |
+| description | String | `description` | Nullable |
+| estimatedDurationDays | Integer | `estimateddurationdays` | Nullable |
 | requires2fa | Boolean | `requires2fa` | NOT NULL, default=`false` |
 | active | Boolean | `active` | NOT NULL, default=`true` |
 | createdAt | LocalDateTime | `createdat` | NOT NULL |
 
 **Relaciones:**
 
-| Tipo | Campo | Entidad destino | FK | Extra |
-|---|---|---|---|---|
-| @ManyToOne | workflow | Workflows | `workflowsidworkflow` | LAZY, @JsonIgnore |
-| @ManyToOne | academicCalendar | AcademicCalendar | `academiccalendaridacademiccalendar` (nullable) | LAZY, @JsonIgnore |
-| @ManyToOne | deadLineRule | DeadLinerules | `deadlineruleid` (nullable) | LAZY, @JsonIgnore |
+| Tipo | Campo | Entidad destino | FK |
+|---|---|---|---|
+| @ManyToOne (LAZY) | workflow | Workflows | `workflowsidworkflow` (@JsonIgnore) |
+| @ManyToOne (LAZY) | academicCalendar | AcademicCalendar | `academiccalendaridacademiccalendar` (@JsonIgnore, nullable) |
+| @ManyToOne (LAZY) | deadLineRule | DeadLinerules | `deadlineruleid` (@JsonIgnore, nullable) |
 
 ---
 
-### 4.17 `ProcessingStage`
+### 5.17 `ProcessingStage`
 
-**Tabla:** `processingstage` · **Lombok:** `@Data`, `@Builder`
-
-Etapas de procesamiento que conforman un flujo de trabajo.
+**Tabla:** `processingstage` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | idProcessingStage | Integer | `idprocessingstage` | PK, auto-increment |
 | stageName | String | `stagename` | NOT NULL, length=255 |
 | stageCode | String | `stagecode` | NOT NULL, UNIQUE, length=50 |
-| stageDescription | String | `stagedescription` | nullable |
+| stageDescription | String | `stagedescription` | Nullable |
 | stageOrder | Integer | `stageorder` | NOT NULL |
 | requiresApproval | Boolean | `requiresapproval` | NOT NULL, default=`false` |
-| maxDurationDays | Integer | `maxdurationdays` | nullable |
+| maxDurationDays | Integer | `maxdurationdays` | Nullable |
 
 **Relaciones:** Ninguna
 
 ---
 
-### 4.18 `RefreshToken`
+### 5.18 `RefreshToken`
 
-**Tabla:** `refresh_tokens` · **Lombok:** `@Data`, `@Builder`
-
-Tokens de refresco para renovar los JWT de acceso sin re-autenticación.
+**Tabla:** `refresh_tokens` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -548,11 +712,9 @@ Tokens de refresco para renovar los JWT de acceso sin re-autenticación.
 
 ---
 
-### 4.19 `RejectionReasons`
+### 5.19 `RejectionReasons`
 
-**Tabla:** `rejectionreasons` · **Lombok:** `@Data`, `@Builder`
-
-Razones predefinidas para rechazar solicitudes.
+**Tabla:** `rejectionreasons` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -566,11 +728,9 @@ Razones predefinidas para rechazar solicitudes.
 
 ---
 
-### 4.20 `RequirementsOfTheProcedure`
+### 5.20 `RequirementsOfTheProcedure`
 
-**Tabla:** `requirementsoftheprocedure` · **Lombok:** `@Data`, `@Builder`
-
-Requisitos que un trámite exige al estudiante (documentos, formularios, etc.).
+**Tabla:** `requirementsoftheprocedure` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -579,7 +739,7 @@ Requisitos que un trámite exige al estudiante (documentos, formularios, etc.).
 | requirementDescription | String | `requirementdescription` | TEXT |
 | requirementType | String | `requirementtype` | NOT NULL, length=50 |
 | isMandatory | Boolean | `ismandatory` | NOT NULL, default=`true` |
-| displayOrder | Integer | `displayorder` | nullable |
+| displayOrder | Integer | `displayorder` | Nullable |
 
 **Relaciones:**
 
@@ -589,31 +749,29 @@ Requisitos que un trámite exige al estudiante (documentos, formularios, etc.).
 
 ---
 
-### 4.21 `Roles`
+### 5.21 `Roles`
 
-**Tabla:** `roles` · **Lombok:** `@Getter`, `@Setter`, `@EqualsAndHashCode(onlyExplicitlyIncluded=true)`
-
-Roles del sistema. Usa `@Getter/@Setter` en lugar de `@Data` para evitar StackOverflow en colecciones bidireccionales.
+**Tabla:** `roles` · **Lombok:** `@Getter`, `@Setter`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
-| idRole | Integer | `idrole` | PK, auto-increment, @EqualsAndHashCode.Include |
+| idRole | Integer | `idrole` | PK, auto-increment |
 | roleName | String | `rolename` | NOT NULL, UNIQUE, length=100 |
 | roleDescription | String | `roledescription` | TEXT |
 
 **Relaciones:**
 
-| Tipo | Campo | Entidad destino | Join Table | Fetch |
-|---|---|---|---|---|
-| @ManyToMany | permissions | Permissions | `role_permissions` (joinCol=`idrole`, inverseCol=`idpermission`) | LAZY |
+| Tipo | Campo | Entidad destino | FK |
+|---|---|---|---|
+| @ManyToMany (EAGER) | permissions | Permissions | Tabla intermedia `role_permissions` |
+
+> Usa `@ToString(exclude = "permissions")` y `@EqualsAndHashCode(onlyExplicitlyIncluded = true)` para evitar recursión.
 
 ---
 
-### 4.22 `SessionToken`
+### 5.22 `SessionToken`
 
-**Tabla:** `sessiontokens` · **Lombok:** `@Data`, `@Builder`
-
-Tokens de sesión con información de dispositivo para auditoría.
+**Tabla:** `sessiontokens` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -623,7 +781,7 @@ Tokens de sesión con información de dispositivo para auditoría.
 | userAgent | String | `useragent` | TEXT |
 | createdAt | LocalDateTime | `createdat` | NOT NULL |
 | expiresAt | LocalDateTime | `expiresat` | NOT NULL |
-| lastActivity | LocalDateTime | `lastactivity` | nullable |
+| lastActivity | LocalDateTime | `lastactivity` | Nullable |
 
 **Relaciones:**
 
@@ -633,17 +791,15 @@ Tokens de sesión con información de dispositivo para auditoría.
 
 ---
 
-### 4.23 `StageTracking`
+### 5.23 `StageTracking`
 
-**Tabla:** `stagetracking` · **Lombok:** `@Data`, `@Builder`
-
-Seguimiento del progreso de una solicitud a través de las etapas de procesamiento.
+**Tabla:** `stagetracking` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | id | Integer | `idstagetracking` | PK, auto-increment |
 | enteredAt | LocalDateTime | `enteredat` | NOT NULL |
-| completedAt | LocalDateTime | `completedat` | nullable |
+| completedAt | LocalDateTime | `completedat` | Nullable |
 | notes | String | `notes` | TEXT |
 
 **Relaciones:**
@@ -656,35 +812,31 @@ Seguimiento del progreso de una solicitud a través de las etapas de procesamien
 
 ---
 
-### 4.24 `States`
+### 5.24 `States`
 
-**Tabla:** `states` · **Lombok:** `@Data`, `@Builder`
-
-Estados posibles de un trámite (ej. pendiente, en proceso, aprobado, rechazado).
+**Tabla:** `states` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | idState | Integer | `idstate` | PK, auto-increment |
 | stateName | String | `statename` | NOT NULL, UNIQUE, length=100 |
-| stateDescription | String | `statedescription` | nullable |
+| stateDescription | String | `statedescription` | Nullable |
 | stateCategory | String | `statecategory` | NOT NULL, length=50 |
 
 **Relaciones:** Ninguna
 
 ---
 
-### 4.25 `Students`
+### 5.25 `Students`
 
-**Tabla:** `students` · **Lombok:** `@Data`, `@Builder`
-
-Información académica del estudiante (semestre, paralelo, carrera, estado).
+**Tabla:** `students` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | id | Integer | `idstudent` | PK, auto-increment |
 | semester | String | `semester` | NOT NULL, length=255 |
 | parallel | String | `parallel` | NOT NULL, length=1 |
-| enrollmentDate | LocalDate | `enrollmentdate` | nullable |
+| enrollmentDate | LocalDate | `enrollmentdate` | Nullable |
 | status | String | `status` | NOT NULL, length=50, default=`"activo"` |
 
 **Relaciones:**
@@ -694,21 +846,21 @@ Información académica del estudiante (semestre, paralelo, carrera, estado).
 | @ManyToOne | user | Users | `usersiduser` |
 | @ManyToOne | career | Careers | `careersidcareer` |
 
+**Estados válidos del estudiante (máquina de estados):** `activo` → `promovido` / `graduado` / `retirado` → `reactivado`
+
 ---
 
-### 4.26 `TwoFactorAuth`
+### 5.26 `TwoFactorAuth`
 
-**Tabla:** `twofactorauth` · **Lombok:** `@Data`, `@Builder`
-
-Configuración de autenticación de dos factores (TOTP) vinculada a credenciales.
+**Tabla:** `twofactorauth` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | id | Integer | `id2fa` | PK, auto-increment |
 | enabled | Boolean | `enabled` | NOT NULL, default=`false` |
 | secretKey | String | `secretkey` | TEXT |
-| backupCodes | List\<String\> | `backupcodes` | TEXT, usa `StringListConverter` |
-| verifiedAt | LocalDateTime | `verifiedat` | nullable |
+| backupCodes | List\<String\> | `backupcodes` | TEXT (JPA Converter: comma-delimited) |
+| verifiedAt | LocalDateTime | `verifiedat` | Nullable |
 
 **Relaciones:**
 
@@ -718,15 +870,13 @@ Configuración de autenticación de dos factores (TOTP) vinculada a credenciales
 
 ---
 
-### 4.27 `Users`
+### 5.27 `Users`
 
-**Tabla:** `users` · **Lombok:** `@Getter`, `@Setter`, `@EqualsAndHashCode(onlyExplicitlyIncluded=true)`
-
-Usuarios del sistema. Usa `@Getter/@Setter` en lugar de `@Data` para evitar recursión infinita con colecciones.
+**Tabla:** `users` · **Lombok:** `@Getter`, `@Setter`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
-| idUser | Integer | `iduser` | PK, auto-increment, @EqualsAndHashCode.Include |
+| idUser | Integer | `iduser` | PK, auto-increment |
 | names | String | `names` | NOT NULL, length=255 |
 | surnames | String | `surnames` | NOT NULL, length=255 |
 | cardId | String | `cardid` | NOT NULL, UNIQUE, length=10 |
@@ -735,30 +885,30 @@ Usuarios del sistema. Usa `@Getter/@Setter` en lugar de `@Data` para evitar recu
 | phoneNumber | String | `phonenumber` | length=15 |
 | statement | Boolean | `statement` | NOT NULL, default=`true` |
 | createdAt | LocalDateTime | `createdat` | NOT NULL |
-| updatedAt | LocalDateTime | `updatedat` | nullable |
+| updatedAt | LocalDateTime | `updatedat` | Nullable |
 | active | Boolean | `active` | NOT NULL, default=`true` |
 
 **Relaciones:**
 
-| Tipo | Campo | Entidad destino | FK / Join Table | Fetch |
-|---|---|---|---|---|
-| @ManyToOne | configuration | Configurations | `configurationsidconfiguration` | default |
-| @OneToOne | credentials | Credentials | `credentialsidcredentials` (nullable) | default |
-| @ManyToMany | roles | Roles | `user_roles` (joinCol=`iduser`, inverseCol=`idrole`) | EAGER |
+| Tipo | Campo | Entidad destino | FK |
+|---|---|---|---|
+| @ManyToOne | configuration | Configurations | `configurationsidconfiguration` |
+| @OneToOne | credentials | Credentials | `credentialsidcredentials` |
+| @ManyToMany (EAGER) | roles | Roles | Tabla intermedia `user_roles` |
+
+> Usa `@ToString(exclude = {"roles", "credentials"})` y `@EqualsAndHashCode(onlyExplicitlyIncluded = true)`.
 
 ---
 
-### 4.28 `Workflows`
+### 5.28 `Workflows`
 
-**Tabla:** `workflows` · **Lombok:** `@Data`, `@Builder`
-
-Flujos de trabajo que definen la secuencia de etapas para resolver un trámite.
+**Tabla:** `workflows` · **Lombok:** `@Data`, `@Builder` · **Patrón:** SP
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
 | idWorkflow | Integer | `idworkflow` | PK, auto-increment |
 | workflowName | String | `workflowname` | NOT NULL, length=255 |
-| workflowDescription | String | `workflowdescription` | nullable |
+| workflowDescription | String | `workflowdescription` | Nullable |
 | createdAt | LocalDateTime | `createdat` | NOT NULL |
 | active | Boolean | `active` | NOT NULL, default=`true` |
 
@@ -766,11 +916,9 @@ Flujos de trabajo que definen la secuencia de etapas para resolver un trámite.
 
 ---
 
-### 4.29 `WorkflowStages`
+### 5.29 `WorkflowStages`
 
-**Tabla:** `workflowstages` · **Lombok:** `@Data`, `@Builder`
-
-Tabla de vinculación entre flujos de trabajo y etapas de procesamiento con orden y opcionalidad.
+**Tabla:** `workflowstages` · **Lombok:** `@Data`, `@Builder` · **Patrón:** JPA
 
 | Campo | Tipo | Columna | Restricciones |
 |---|---|---|---|
@@ -780,1309 +928,1255 @@ Tabla de vinculación entre flujos de trabajo y etapas de procesamiento con orde
 
 **Relaciones:**
 
-| Tipo | Campo | Entidad destino | FK | Extra |
-|---|---|---|---|---|
-| @ManyToOne | workflow | Workflows | `workflowidworkflow` | LAZY, @JsonIgnore |
-| @ManyToOne | processingStage | ProcessingStage | `processingstageidprocessingstage` | LAZY, @JsonIgnore |
-
----
-
-### Tablas de Unión (ManyToMany)
-
-| Tabla de unión | Entidad propietaria | Entidad inversa | Columna propietaria | Columna inversa |
-|---|---|---|---|---|
-| `role_permissions` | Roles | Permissions | `idrole` | `idpermission` |
-| `user_roles` | Users | Roles | `iduser` | `idrole` |
-
----
-
-## 5. Repositorios (Repository)
-
-Todos los repositorios extienden `JpaRepository<Entity, ID>` y se encuentran en el paquete `com.app.uteq.Repository`.
-
-### 5.1 Repositorios basados en Stored Procedures
-
-Estos repositorios utilizan `@Query(nativeQuery=true)` para invocar procedimientos almacenados y funciones de PostgreSQL.
-
-| Repositorio | Entidad | SPs (CALL) | Funciones (SELECT) |
+| Tipo | Campo | Entidad destino | FK |
 |---|---|---|---|
-| `IAcademicCalendarRepository` | AcademicCalendar | `spi_academiccalendar`, `spu_academiccalendar`, `spd_academiccalendar` | `fn_list_academiccalendar(onlyActive)` |
-| `ICareersRepository` | Careers | `spi_career`, `spu_career`, `spd_career` | `fn_list_careers(facultyid)` |
-| `IConfigurationsRepository` | Configurations | `spi_configuration`, `spu_configuration`, `spd_configuration` | `fn_list_configurations()` |
-| `IDeadLineRulesRepository` | DeadLinerules | `spi_deadlinerule`, `spu_deadlinerule`, `spd_deadlinerule` | `fn_list_deadlinerules(onlyActive)` |
-| `IDocumentTemplatesRepository` | DocumentTemplates | `spi_documenttemplate`, `spu_documenttemplate`, `spd_documenttemplate` | `fn_list_documenttemplates(onlyActive)` |
-| `IFacultiesRepository` | Faculties | `spi_faculty`, `spu_faculty`, `spd_faculty` | `fn_list_faculties()` |
-| `IPermissionsRepository` | Permissions | `spi_permission`, `spu_permission`, `spd_permission` | `fn_list_permissions()` |
-| `IProcessingStageRepository` | ProcessingStage | `spi_processingstage`, `spu_processingstage`, `spd_processingstage` | `fn_list_processingstage()` |
-| `IRejectionReasonsRepository` | RejectionReasons | `spi_rejectionreason`, `spu_rejectionreason`, `spd_rejectionreason` | `fn_list_rejectionreasons(onlyActive)` |
-| `IStatesRepository` | States | `spi_state`, `spu_state`, `spd_state` | `fn_list_states(category)` |
-| `IWorkflowsRepository` | Workflows | `spi_workflow`, `spu_workflow`, `spd_workflow` | `fn_list_workflows(onlyActive)` |
+| @ManyToOne (LAZY) | workflow | Workflows | `workflowidworkflow` (@JsonIgnore) |
+| @ManyToOne (LAZY) | processingStage | ProcessingStage | `processingstageidprocessingstage` (@JsonIgnore) |
 
-### 5.2 Repositorios con queries JPA derivadas
+---
 
-| Repositorio | Entidad | Métodos personalizados |
+## 6. Repositorios (Repository)
+
+Todos extienden `JpaRepository<Entity, ID>`. Total: **29 repositorios**.
+
+### 6.1 Repositorios con Patrón SP (11)
+
+Estos repositorios definen `@Query(nativeQuery = true)` con `CALL sp*` y `SELECT * FROM fn_*`.
+
+| Repositorio | Entidad | SP Insert | SP Update | SP Delete | Función Lista |
+|---|---|---|---|---|---|
+| `IAcademicCalendarRepository` | AcademicCalendar | `spi_academiccalendar` | `spu_academiccalendar` | `spd_academiccalendar` | `fn_list_academiccalendar` |
+| `ICareersRepository` | Careers | `spi_career` | `spu_career` | `spd_career` | `fn_list_careers` |
+| `IConfigurationsRepository` | Configurations | `spi_configuration` | `spu_configuration` | `spd_configuration` | `fn_list_configurations` |
+| `IDeadLineRulesRepository` | DeadLinerules | `spi_deadlinerule` | `spu_deadlinerule` | `spd_deadlinerule` | `fn_list_deadlinerules` |
+| `IDocumentTemplatesRepository` | DocumentTemplates | `spi_documenttemplate` | `spu_documenttemplate` | `spd_documenttemplate` | `fn_list_documenttemplates` |
+| `IFacultiesRepository` | Faculties | `spi_faculty` | `spu_faculty` | `spd_faculty` | `fn_list_faculties` |
+| `IPermissionsRepository` | Permissions | `spi_permission` | `spu_permission` | `spd_permission` | `fn_list_permissions` |
+| `IProcessingStageRepository` | ProcessingStage | `spi_processingstage` | `spu_processingstage` | `spd_processingstage` | `fn_list_processingstage` |
+| `IRejectionReasonsRepository` | RejectionReasons | `spi_rejectionreason` | `spu_rejectionreason` | `spd_rejectionreason` | `fn_list_rejectionreasons` |
+| `IStatesRepository` | States | `spi_state` | `spu_state` | `spd_state` | `fn_list_states` |
+| `IWorkflowsRepository` | Workflows | `spi_workflow` | `spu_workflow` | `spd_workflow` | `fn_list_workflows` |
+
+### 6.2 Repositorios con Patrón JPA (18)
+
+Estos repositorios usan queries derivadas de Spring Data y/o JPA CRUD heredado.
+
+| Repositorio | Entidad | Queries Derivadas |
 |---|---|---|
-| `IUsersRepository` | Users | `findByInstitutionalEmail`, `findByCardId`, `findByPersonalMail`, `findByActiveTrue`, `findByActiveFalse`, `findByRolesIdRole`, `existsByInstitutionalEmail`, `existsByCardId` |
 | `IApplicationsRepository` | Applications | `findByApplicationCode`, `findByApplicantUserIdUser`, `findByPriority`, `findByProcedureIdProcedure`, `existsByApplicationCode` |
+| `IApplicationStageHistoryRepository` | ApplicationStageHistory | (vacío — solo CRUD heredado) |
+| `IAttachedDocumentsRepository` | AttachedDocuments | (vacío) |
+| `ICredentialsRepository` | Credentials | (vacío) |
+| `IDigitalSignaturesRepository` | DigitalSignatures | (vacío) |
+| `IDocumentsGeneratedRepository` | DocumentsGenerated | (vacío) |
+| `INotificationRepository` | Notification | (vacío) |
+| `INotificationTypeRepository` | NotificationType | (vacío) |
 | `IProceduresRepository` | Procedures | `findByProcedureCode`, `findByActiveTrue`, `findByActiveFalse`, `findByWorkflowIdWorkflow`, `existsByProcedureCode`, `existsByNameProcedure` |
-| `IStudentsRepository` | Students | `findByUserIdUser`, `findByCareerIdCareer`, `findBySemesterAndParallel`, `findByStatus`, `existsByUserIdUser` |
+| `IRefreshTokenRepository` | RefreshToken | `findByToken`, `findByUserAndRevokedFalse`, SP: `spu_revoke_all_refresh_tokens` |
+| `IRequirementsOfTheProcedureRepository` | RequirementsOfTheProcedure | (vacío) |
 | `IRolesRepository` | Roles | `findByRoleName`, `existsByRoleName` |
-| `IRefreshTokenRepository` | RefreshToken | `findByToken`, `findByUserAndRevokedFalse` |
+| `ISessionTokenRepository` | SessionToken | (vacío) |
+| `IStageTrackingRepository` | StageTracking | (vacío) |
+| `IStudentsRepository` | Students | `findByUserIdUser`, `findByCareerIdCareer`, `findBySemesterAndParallel`, `findByStatus`, `existsByUserIdUser` |
 | `ITwoFactorAuthRepository` | TwoFactorAuth | `findByCredentials_Id`, `existsByCredentials_IdAndEnabledTrue` |
+| `IUsersRepository` | Users | `findByInstitutionalEmail`, `findByCardId`, `findByPersonalMail`, `findByActiveTrue`, `findByActiveFalse`, `findByRolesIdRole`, `existsByInstitutionalEmail`, `existsByCardId` |
+| `IWorkflowStagesRepository` | WorkflowStages | (vacío) |
 
-### 5.3 Repositorios CRUD básicos
-
-Solo exponen los métodos heredados de `JpaRepository` (sin queries adicionales):
-
-`IApplicationStageHistoryRepository`, `IAttachedDocumentsRepository`, `ICredentialsRepository`, `IDigitalSignaturesRepository`, `IDocumentsGeneratedRepository`, `INotificationRepository`, `INotificationTypeRepository`, `IRequirementsOfTheProcedureRepository`, `ISessionTokenRepository`, `IStageTrackingRepository`, `IWorkflowStagesRepository`
+> **Nota:** `IRefreshTokenRepository` es un caso mixto: usa queries derivadas para búsqueda + un SP (`spu_revoke_all_refresh_tokens`) para revocación masiva.
 
 ---
 
-## 6. Servicios — Interfaces (Services)
+## 7. Servicios — Interfaces (Services)
 
-Todas las interfaces definen el contrato de operaciones de negocio. Se encuentran en `com.app.uteq.Services`.
+Total: **29 interfaces** en `com.app.uteq.Services`.
 
-### 6.1 `IAcademicCalendarService`
+### 7.1 Servicios con Patrón SP (11)
 
-Gestión de calendarios académicos.
+Estas interfaces definen operaciones CRUD que internamente invocan SPs.
 
-```java
-List<AcademicCalendarResponse> listarCalendarios(Boolean onlyActive)
-void createcalendar(String calendarname, String academicperiod, LocalDate startdate, LocalDate enddate, Boolean active)
-void modifycalendar(UAcademicCalendarRequest request)
-void deletecalendar(Integer idacademiccalendar)
-```
-
-### 6.2 `IApplicationsService`
-
-Gestión completa de solicitudes/trámites estudiantiles.
-
-```java
-// Operaciones legadas
-List<Applications> findAll()
-Optional<Applications> findById(Integer id)
-Applications save(Applications applications)
-void deleteById(Integer id)
-
-// Operaciones basadas en DTOs
-List<ApplicationResponse> findAllApplications()
-ApplicationResponse findApplicationById(Integer id)
-List<ApplicationResponse> findByApplicantUserId(Integer userId)
-List<ApplicationResponse> findByPriority(String priority)
-ApplicationResponse createApplication(CApplicationRequest request)
-ApplicationResponse updateApplication(Integer id, UApplicationRequest request)
-void deleteApplication(Integer id)
-ApplicationResponse resolveApplication(Integer id, String resolution)
-ApplicationResponse rejectApplication(Integer id, Integer rejectionReasonId)
-```
-
-### 6.3 `IApplicationStageHistoryService`
-
-CRUD básico del historial de etapas de solicitudes.
-
-```java
-List<ApplicationStageHistory> findAll()
-Optional<ApplicationStageHistory> findById(Integer id)
-ApplicationStageHistory save(ApplicationStageHistory entity)
-void deleteById(Integer id)
-```
-
-### 6.4 `IAttachedDocumentsService`
-
-CRUD básico de documentos adjuntos.
-
-```java
-List<AttachedDocuments> findAll()
-Optional<AttachedDocuments> findById(Integer id)
-AttachedDocuments save(AttachedDocuments entity)
-void deleteById(Integer id)
-```
-
-### 6.5 `ICareersService`
-
-Gestión de carreras vía Stored Procedures.
-
-```java
-void createCareers(CCareersRequest request)
-void updateCareers(UCareersRequest request)
-void deleteCareers(Integer idcareer)
-List<CareersResponse> listCareers(Integer facultyid)
-```
-
-### 6.6 `IConfigurationService`
-
-Gestión de configuraciones de usuario vía Stored Procedures.
-
-```java
-void createConfiguration(CConfigurationRequest request)
-void updateConfiguration(UConfigurationRequest request)
-void deleteConfiguration(Integer idconfiguration)
-List<ConfigurationResponse> listConfiguration()
-```
-
-### 6.7 `ICredentialsService`
-
-Gestión de credenciales con lógica de seguridad de contraseñas.
-
-```java
-// Operaciones legadas
-List<Credentials> findAll()
-Optional<Credentials> findById(Integer id)
-Credentials save(Credentials credentials)
-void deleteById(Integer id)
-
-// Operaciones de negocio
-List<CredentialResponse> findAllCredentials()
-CredentialResponse findCredentialById(Integer id)
-CredentialResponse createCredential(CCredentialRequest request)
-CredentialResponse changePassword(Integer id, String currentPassword, String newPassword)
-CredentialResponse lockAccount(Integer id)
-CredentialResponse unlockAccount(Integer id)
-boolean registerFailedAttempt(Integer id)
-void registerSuccessfulLogin(Integer id)
-String resetPassword(Integer id)
-boolean isPasswordExpired(Integer id)
-void verifyCredentialOwnership(Integer credentialId, String authenticatedEmail)
-```
-
-### 6.8 `IDeadLineRulesService`
-
-Gestión de reglas de plazo vía Stored Procedures.
-
-```java
-void createDeadlinerule(CDeadlineRuleRequest request)
-void updateDeadlinerule(UDeadlineRuleRequest request)
-void deleteDeadlinerule(Integer iddeadlinerule)
-List<DeadlineRuleResponse> listDeadlinerule(Boolean onlyActive)
-```
-
-### 6.9 `IDigitalSignaturesService`
-
-CRUD básico de firmas digitales.
-
-```java
-List<DigitalSignatures> findAll()
-Optional<DigitalSignatures> findById(Integer id)
-DigitalSignatures save(DigitalSignatures entity)
-void deleteById(Integer id)
-```
-
-### 6.10 `IDocumentsGeneratedService`
-
-CRUD básico de documentos generados.
-
-```java
-List<DocumentsGenerated> findAll()
-Optional<DocumentsGenerated> findById(Integer id)
-DocumentsGenerated save(DocumentsGenerated entity)
-void deleteById(Integer id)
-```
-
-### 6.11 `IDocumentTemplatesService`
-
-Gestión de plantillas de documentos vía Stored Procedures.
-
-```java
-void createDocumenttemplate(CDocumentTemplateRequest request)
-void updateDocumenttemplate(UDocumentTemplateRequest request)
-void deleteDocumenttemplate(Integer idtemplate)
-List<DocumentTemplateResponse> listDocumenttemplate(Boolean onlyActive)
-```
-
-### 6.12 `IFacultiesService`
-
-Gestión de facultades vía Stored Procedures.
-
-```java
-void createFaculty(CFacultyRequest request)
-void updateFaculty(UFacultyRequest request)
-void deleteFaculty(Integer idfaculty)
-List<FacultyResponse> listFaculty()
-```
-
-### 6.13 `INotificationService`
-
-CRUD básico de notificaciones.
-
-```java
-List<Notification> findAll()
-Optional<Notification> findById(Integer id)
-Notification save(Notification notification)
-void deleteById(Integer id)
-```
-
-### 6.14 `INotificationTypeService`
-
-CRUD básico de tipos de notificación.
-
-```java
-List<NotificationType> findAll()
-Optional<NotificationType> findById(Integer id)
-NotificationType save(NotificationType entity)
-void deleteById(Integer id)
-```
-
-### 6.15 `IPermissionsService`
-
-Gestión de permisos vía Stored Procedures.
-
-```java
-void createPermission(CPermissionRequest request)
-void updatePermission(UPermissionRequest request)
-void deletePermission(Integer idpermission)
-List<PermissionResponse> listPermission()
-```
-
-### 6.16 `IProceduresService`
-
-Gestión completa de trámites con lógica de negocio avanzada.
-
-```java
-// Operaciones legadas
-List<Procedures> findAll()
-Optional<Procedures> findById(Integer id)
-Procedures save(Procedures procedure)
-void deleteById(Integer id)
-
-// Operaciones de negocio
-List<ProcedureResponse> findAllProcedures()
-List<ProcedureResponse> findAllIncludingInactive()
-ProcedureResponse findProcedureById(Integer id)
-Optional<ProcedureResponse> findByProcedureCode(String procedureCode)
-List<ProcedureResponse> findByWorkflow(Integer workflowId)
-ProcedureResponse createProcedure(CProcedureRequest request)
-ProcedureResponse updateProcedure(Integer id, UProcedureRequest request)
-ProcedureResponse activateProcedure(Integer id)
-ProcedureResponse deactivateProcedure(Integer id)
-void deleteProcedure(Integer id)
-boolean requires2FA(Integer id)
-```
-
-### 6.17 `IProcessingStageService`
-
-Gestión de etapas de procesamiento vía Stored Procedures.
-
-```java
-void createProcessingstage(CProcessingStageRequest request)
-void updateProcessingstage(UProcessingStageRequest request)
-void deleteProcessingstage(Integer idprocessingstage)
-List<ProcessingStageResponse> listProcessingstage()
-```
-
-### 6.18 `IRefreshTokenService`
-
-CRUD básico de tokens de refresco.
-
-```java
-List<RefreshToken> findAll()
-Optional<RefreshToken> findById(Long id)
-RefreshToken save(RefreshToken refreshToken)
-void deleteById(Long id)
-```
-
-### 6.19 `IRejectionReasonsService`
-
-Gestión de razones de rechazo vía Stored Procedures.
-
-```java
-void createRejectreason(CRejectionReasonRequest request)
-void updateRejectreason(URejectionReasonRequest request)
-void deleteRejectreason(Integer idrejectionreason)
-List<RejectionReasonResponse> listRejectreason(Boolean onlyActive)
-```
-
-### 6.20 `IRequirementsOfTheProcedureService`
-
-CRUD básico de requisitos de trámites.
-
-```java
-List<RequirementsOfTheProcedure> findAll()
-Optional<RequirementsOfTheProcedure> findById(Integer id)
-RequirementsOfTheProcedure save(RequirementsOfTheProcedure entity)
-void deleteById(Integer id)
-```
-
-### 6.21 `IRolesService`
-
-Gestión completa de roles con asignación de permisos y usuarios.
-
-```java
-// Operaciones legadas
-List<Roles> findAll()
-Optional<Roles> findById(Integer id)
-Roles save(Roles role)
-void deleteById(Integer id)
-
-// Operaciones de negocio
-List<RoleResponse> findAllRoles()
-RoleResponse findRoleById(Integer id)
-Optional<RoleResponse> findByRoleName(String roleName)
-RoleResponse createRole(CRoleRequest request)
-RoleResponse updateRole(Integer id, URoleRequest request)
-void deleteRole(Integer id)
-RoleResponse assignPermissions(Integer roleId, Set<Integer> permissionIds)
-RoleResponse removePermissions(Integer roleId, Set<Integer> permissionIds)
-void assignRoleToUser(Integer roleId, Integer userId)
-void removeRoleFromUser(Integer roleId, Integer userId)
-```
-
-### 6.22 `ISessionTokenService`
-
-CRUD básico de tokens de sesión.
-
-```java
-List<SessionToken> findAll()
-Optional<SessionToken> findById(Integer id)
-SessionToken save(SessionToken sessionToken)
-void deleteById(Integer id)
-```
-
-### 6.23 `IStageTrackingService`
-
-CRUD básico de seguimiento de etapas.
-
-```java
-List<StageTracking> findAll()
-Optional<StageTracking> findById(Integer id)
-StageTracking save(StageTracking stageTracking)
-void deleteById(Integer id)
-```
-
-### 6.24 `IStatesService`
-
-Gestión de estados vía Stored Procedures.
-
-```java
-void createStates(CStateRequest request)
-void updateStates(UStateRequest request)
-void deleteStates(Integer idstate)
-List<StateResponse> listStates(String category)
-```
-
-### 6.25 `IStudentsService`
-
-Gestión completa del ciclo de vida estudiantil.
-
-```java
-// Operaciones legadas
-List<Students> findAll()
-Optional<Students> findById(Integer id)
-Students save(Students students)
-void deleteById(Integer id)
-
-// Operaciones de negocio
-List<StudentResponse> findAllStudents()
-StudentResponse findStudentById(Integer id)
-List<StudentResponse> findByCareer(Integer careerId)
-List<StudentResponse> findBySemesterAndParallel(String semester, String parallel)
-Optional<StudentResponse> findByUserId(Integer userId)
-StudentResponse enrollStudent(CStudentRequest request)
-StudentResponse updateStudent(Integer id, UStudentRequest request)
-StudentResponse changeStatus(Integer id, String newStatus)
-StudentResponse promoteToNextSemester(Integer id)
-StudentResponse graduate(Integer id)
-StudentResponse withdraw(Integer id)
-StudentResponse reactivate(Integer id)
-```
-
-### 6.26 `ITwoFactorAuthService`
-
-Operaciones de autenticación de dos factores (TOTP).
-
-```java
-// CRUD base
-List<TwoFactorAuth> findAll()
-Optional<TwoFactorAuth> findById(Integer id)
-TwoFactorAuth save(TwoFactorAuth entity)
-void deleteById(Integer id)
-
-// Operaciones 2FA
-TwoFactorSetupResponse setup2FA(String email)
-boolean verifyAndEnable2FA(String email, int code)
-void disable2FA(String email, int code)
-boolean validateCode(String email, int code)
-boolean validateBackupCode(String email, String backupCode)
-boolean is2FAEnabled(String email)
-TwoFactorAuthResponse getStatus(String email)
-List<String> regenerateBackupCodes(String email, int code)
-```
-
-### 6.27 `IUsersService`
-
-Gestión completa de usuarios del sistema.
-
-```java
-// Operaciones legadas
-List<Users> findAll()
-Optional<Users> findById(Integer id)
-Users save(Users user)
-void deleteById(Integer id)
-
-// Operaciones de negocio
-List<UserResponse> findAllUsers()
-UserResponse findUserById(Integer id)
-UserResponse createUser(CUserRequest request)
-UserResponse updateUser(Integer id, UUserRequest request)
-void deleteUser(Integer id)
-UserResponse deactivateUser(Integer id)
-UserResponse activateUser(Integer id)
-Optional<UserResponse> findByInstitutionalEmail(String email)
-```
-
-### 6.28 `IWorkflowsService`
-
-Gestión de flujos de trabajo vía Stored Procedures.
-
-```java
-void createWorkflow(CWorkflowRequest request)
-void updateWorkflow(UWorkflowRequest request)
-void deleteWorkflow(Integer idworkflow)
-List<WorkflowResponse> listWorkflow(Boolean onlyActive)
-```
-
-### 6.29 `IWorkflowStagesService`
-
-CRUD básico de etapas de flujo de trabajo.
-
-```java
-List<WorkflowStages> findAll()
-Optional<WorkflowStages> findById(Integer id)
-WorkflowStages save(WorkflowStages workflowStage)
-void deleteById(Integer id)
-```
-
----
-
-## 7. Servicios — Implementaciones (Services/Impl)
-
-### 7.1 Patrón A: Implementaciones basadas en Stored Procedures
-
-Estas clases delegan todo el CRUD a procedimientos almacenados de PostgreSQL. Los resultados `Object[]` se convierten manualmente a DTOs de respuesta.
-
-| Implementación | Lógica adicional |
+| Interfaz | Métodos |
 |---|---|
-| `AcademicCalendarServiceImpl` | Valida que `calendarname` y `academicperiod` no estén vacíos antes de llamar al SP |
-| `CareersServiceImpl` | Delegación pura al SP, sin validación backend adicional |
-| `ConfigurationServiceImpl` | Delegación pura al SP |
-| `DeadLineRulesServiceImpl` | Delegación pura al SP |
-| `DocumentTemplatesServiceImpl` | Delegación pura al SP |
-| `FacultiesServiceImpl` | Delegación pura al SP |
-| `PermissionsServiceImpl` | Delegación pura al SP |
-| `ProcessingStageServiceImpl` | Delegación pura al SP |
-| `RejectionReasonsServiceImpl` | Delegación pura al SP |
-| `StatesServiceImpl` | Delegación pura al SP |
-| `WorkflowsServiceImpl` | Delegación pura al SP |
+| `IAcademicCalendarService` | `createcalendar(...)`, `modifycalendar(UAcademicCalendarRequest)`, `deletecalendar(Integer)`, `listarCalendarios(Boolean)` |
+| `ICareersService` | `createCareers(CCareersRequest)`, `updateCareers(UCareersRequest)`, `deleteCareers(Integer)`, `listCareers(Integer)` |
+| `IConfigurationService` | `createConfiguration(CConfigurationRequest)`, `updateConfiguration(UConfigurationRequest)`, `deleteConfiguration(Integer)`, `listConfiguration()` |
+| `IDeadLineRulesService` | `createDeadlinerule(CDeadlineRuleRequest)`, `updateDeadlinerule(UDeadlineRuleRequest)`, `deleteDeadlinerule(Integer)`, `listDeadlinerule(Boolean)` |
+| `IDocumentTemplatesService` | `createDocumenttemplate(CDocumentTemplateRequest)`, `updateDocumenttemplate(UDocumentTemplateRequest)`, `deleteDocumenttemplate(Integer)`, `listDocumenttemplate(Boolean)` |
+| `IFacultiesService` | `createFaculty(CFacultyRequest)`, `updateFaculty(UFacultyRequest)`, `deleteFaculty(Integer)`, `listFaculty()` |
+| `IPermissionsService` | `createPermission(CPermissionRequest)`, `updatePermission(UPermissionRequest)`, `deletePermission(Integer)`, `listPermission()` |
+| `IProcessingStageService` | `createProcessingstage(CProcessingStageRequest)`, `updateProcessingstage(UProcessingStageRequest)`, `deleteProcessingstage(Integer)`, `listProcessingstage()` |
+| `IRejectionReasonsService` | `createRejectreason(CRejectionReasonRequest)`, `updateRejectreason(URejectionReasonRequest)`, `deleteRejectreason(Integer)`, `listRejectreason(Boolean)` |
+| `IStatesService` | `createStates(CStateRequest)`, `updateStates(UStateRequest)`, `deleteStates(Integer)`, `listStates(String)` |
+| `IWorkflowsService` | `createWorkflow(CWorkflowRequest)`, `updateWorkflow(UWorkflowRequest)`, `deleteWorkflow(Integer)`, `listWorkflow(Boolean)` |
 
-### 7.2 Patrón B: Implementaciones JPA con lógica de negocio
+### 7.2 Servicios con Patrón JPA (18)
 
-#### `ApplicationsServiceImpl`
+Interfaces que combinan CRUD básico y operaciones de negocio.
 
-Gestión de solicitudes estudiantiles con validación y flujos de estado.
+#### `IApplicationsService` (13 métodos)
+```
+findAll(), findById(Integer), save(Applications), deleteById(Integer)
+findAllApplications(), findApplicationById(Integer)
+findByApplicantUserId(Integer), findByPriority(String)
+createApplication(CApplicationRequest), updateApplication(Integer, UApplicationRequest)
+deleteApplication(Integer)
+resolveApplication(Integer, String), rejectApplication(Integer, Integer)
+```
 
-- Valida que el código de solicitud sea único
-- Verifica que el usuario solicitante esté activo
-- Valida valores de prioridad: `baja`, `normal`, `alta`, `urgente`
-- Marca fecha de creación automáticamente
-- **Resolver:** Registra la resolución con timestamp de finalización
-- **Rechazar:** Asocia una razón de rechazo y registra timestamp
-- Usa `@Transactional` en operaciones de escritura
+#### `IApplicationStageHistoryService` (4 métodos)
+```
+findAll(), findById(Integer), save(ApplicationStageHistory), deleteById(Integer)
+```
 
-#### `CredentialsServiceImpl`
+#### `IAttachedDocumentsService` (4 métodos)
+```
+findAll(), findById(Integer), save(AttachedDocuments), deleteById(Integer)
+```
 
-Gestión de seguridad de contraseñas y cuentas.
+#### `ICredentialsService` (17 métodos)
+```
+findAll(), findById(Integer), save(Credentials), deleteById(Integer)
+findAllCredentials(), findCredentialById(Integer)
+createCredential(CCredentialRequest)
+changePassword(Integer, String, String)
+lockAccount(Integer), unlockAccount(Integer)
+registerFailedAttempt(Integer), registerSuccessfulLogin(Integer)
+resetPassword(Integer), isPasswordExpired(Integer)
+verifyCredentialOwnership(Integer, String)
+registerFailedAttemptByEmail(String), registerSuccessfulLoginByEmail(String)
+```
 
-- **Hashing:** BCrypt para todas las contraseñas
-- **Validación de fortaleza:** Mínimo 8 caracteres, requiere mayúscula, minúscula, dígito y carácter especial
-- **Bloqueo automático:** Después de 5 intentos fallidos, la cuenta se bloquea automáticamente
-- **Expiración:** Contraseñas expiran a los 90 días
-- **Reset:** Genera contraseña temporal de 12 caracteres (alfanumérica + especiales)
-- **Verificación de propiedad:** `verifyCredentialOwnership()` verifica que el usuario autenticado sea el dueño de las credenciales (inyecta `IUsersRepository`)
-- Nunca expone `passwordHash` en DTOs de respuesta
+#### `IDigitalSignaturesService` (4 métodos)
+```
+findAll(), findById(Integer), save(DigitalSignatures), deleteById(Integer)
+```
 
-#### `ProceduresServiceImpl`
+#### `IDocumentsGeneratedService` (4 métodos)
+```
+findAll(), findById(Integer), save(DocumentsGenerated), deleteById(Integer)
+```
 
-Gestión de tipos de trámites.
+#### `INotificationService` (4 métodos)
+```
+findAll(), findById(Integer), save(Notification), deleteById(Integer)
+```
 
-- **Código automático:** Genera códigos con formato `PREFIX-UUID8` (primeras 3 letras del nombre + 8 caracteres UUID)
-- Valida que el workflow asociado exista
-- Duración mínima: 1 día
-- **Protección de eliminación:** No permite eliminar trámites que tengan solicitudes asociadas (lanza `BusinessException`)
-- Activar/desactivar trámites (soft toggle)
-- Consulta de requisito de 2FA por trámite
+#### `INotificationTypeService` (4 métodos)
+```
+findAll(), findById(Integer), save(NotificationType), deleteById(Integer)
+```
 
-#### `RolesServiceImpl`
+#### `IProceduresService` (15 métodos)
+```
+findAll(), findById(Integer), save(Procedures), deleteById(Integer)
+findAllProcedures(), findAllIncludingInactive()
+findProcedureById(Integer), findByProcedureCode(String)
+findByWorkflow(Integer)
+createProcedure(CProcedureRequest), updateProcedure(Integer, UProcedureRequest)
+activateProcedure(Integer), deactivateProcedure(Integer)
+deleteProcedure(Integer), requires2FA(Integer)
+```
 
-Gestión de roles con protección de roles del sistema.
+#### `IRefreshTokenService` (4 métodos)
+```
+findAll(), findById(Long), save(RefreshToken), deleteById(Long)
+```
 
-- **Roles protegidos:** `ROLE_ADMIN`, `ROLE_STUDENT`, `ROLE_COORDINATOR`, `ROLE_DEAN` no pueden ser eliminados ni renombrados
-- **Validación de formato:** Los nombres de rol deben seguir el patrón `ROLE_[A-Z_]+`
-- Previene eliminar roles asignados a usuarios
-- Garantiza que los usuarios mantengan al menos 1 rol
-- Asignación y remoción de permisos a roles
-- Asignación y remoción de roles a usuarios
+#### `IRequirementsOfTheProcedureService` (4 métodos)
+```
+findAll(), findById(Integer), save(RequirementsOfTheProcedure), deleteById(Integer)
+```
 
-#### `StudentsServiceImpl`
+#### `IRolesService` (14 métodos)
+```
+findAll(), findById(Integer), save(Roles), deleteById(Integer)
+findAllRoles(), findRoleById(Integer), findByRoleName(String)
+createRole(CRoleRequest), updateRole(Integer, URoleRequest)
+deleteRole(Integer)
+assignPermissions(Integer, Set<Integer>), removePermissions(Integer, Set<Integer>)
+assignRoleToUser(Integer, Integer), removeRoleFromUser(Integer, Integer)
+```
 
-Ciclo de vida completo del estudiante.
+#### `ISessionTokenService` (4 métodos)
+```
+findAll(), findById(Integer), save(SessionToken), deleteById(Integer)
+```
 
-- **Ciclo:** Matricular → Promover (semestre 1-10) → Graduar/Retirar/Reactivar
-- Valida semestre (1-10), paralelo (letra A-Z)
-- **Transiciones de estado válidas:**
-  - `activo` → se puede retirar, suspender, graduar
-  - `inactivo` → se puede reactivar
-  - `retirado` → se puede reactivar
-  - `graduado` → no se puede cambiar (estado final)
-  - `suspendido` → se puede reactivar
-- **Promoción:** Incrementa semestre (1→2, ..., 9→10), no puede promover más allá de 10
+#### `IStageTrackingService` (4 métodos)
+```
+findAll(), findById(Integer), save(StageTracking), deleteById(Integer)
+```
 
-#### `UsersServiceImpl`
+#### `IStudentsService` (17 métodos)
+```
+findAll(), findById(Integer), save(Students), deleteById(Integer)
+findAllStudents(), findStudentById(Integer)
+findByCareer(Integer), findBySemesterAndParallel(String, String)
+findByUserId(Integer)
+enrollStudent(CStudentRequest), updateStudent(Integer, UStudentRequest)
+changeStatus(Integer, String)
+promoteToNextSemester(Integer), graduate(Integer)
+withdraw(Integer), reactivate(Integer)
+```
 
-Gestión de usuarios del sistema.
+#### `ITwoFactorAuthService` (12 métodos)
+```
+findAll(), findById(Integer), save(TwoFactorAuth), deleteById(Integer)
+setup2FA(String), verifyAndEnable2FA(String, int)
+disable2FA(String, int), validateCode(String, int)
+validateBackupCode(String, String), is2FAEnabled(String)
+getStatus(String), regenerateBackupCodes(String, int)
+```
 
-- Valida unicidad de email institucional y cédula
-- **Eliminación suave:** `deleteUser()` establece `active=false` en lugar de borrar
-- Activar/desactivar usuarios
-- Marca timestamp `updatedAt` en cada actualización
+#### `IUsersService` (12 métodos)
+```
+findAll(), findById(Integer), save(Users), deleteById(Integer)
+findAllUsers(), findUserById(Integer)
+createUser(CUserRequest), updateUser(Integer, UUserRequest)
+deleteUser(Integer)
+deactivateUser(Integer), activateUser(Integer)
+findByInstitutionalEmail(String)
+```
 
-#### `TwoFactorAuthServiceImpl`
-
-Implementación completa de autenticación TOTP con Google Authenticator.
-
-- **Setup:** Genera secreto TOTP vía `GoogleAuthenticator`, construye URI para QR (`otpauth://totp/SGTE-UTEQ:email`), genera 8 códigos de respaldo alfanuméricos de 8 caracteres
-- **Verificación:** Primera verificación del código TOTP habilita 2FA y registra `verifiedAt`
-- **Validación:** Valida códigos TOTP durante el flujo de login
-- **Backup codes:** Códigos de un solo uso que se consumen al validarse; se pueden regenerar (requiere código TOTP válido)
-- **Deshabilitación:** Requiere código TOTP válido para desactivar 2FA
-
-### 7.3 Patrón C: Wrappers CRUD simples
-
-Delegación pura a JpaRepository sin validación ni transformación:
-
-`ApplicationStageHistoryServiceImpl`, `AttachedDocumentsServiceImpl`, `DigitalSignaturesServiceImpl`, `DocumentsGeneratedServiceImpl`, `NotificationServiceImpl`, `NotificationTypeServiceImpl`, `RefreshTokenServiceImpl`, `RequirementsOfTheProcedureServiceImpl`, `SessionTokenServiceImpl`, `StageTrackingServiceImpl`, `WorkflowStagesServiceImpl`
-
-### 7.4 Servicio Especial
-
-#### `CustomUserDetailsService`
-
-Implementa la interfaz `UserDetailsService` de Spring Security.
-
-- Carga usuarios por `institutionalEmail`
-- Mapea los `Roles` del usuario a `SimpleGrantedAuthority`
-- Gestion de flags `accountLocked` y `active`
-- Anotado con `@Transactional(readOnly = true)` para optimización de lectura
+#### `IWorkflowStagesService` (4 métodos)
+```
+findAll(), findById(Integer), save(WorkflowStages), deleteById(Integer)
+```
 
 ---
 
-## 8. Controladores (Controllers)
+## 8. Servicios — Implementaciones (Services/Impl)
 
-Todos los controladores son clases `@RestController` que reciben solicitudes HTTP y delegan a los servicios. Usan DTOs para entrada (`@RequestBody @Valid`) y salida.
+Total: **29 ServiceImpl + 1 CustomUserDetailsService = 30 implementaciones**.
 
-### 8.1 `AuthController`
+Todas las implementaciones llevan las anotaciones:
+- `@Service` — Registra como bean de Spring  
+- `@RequiredArgsConstructor` — Inyección de dependencias por constructor (Lombok)
+- `@Transactional` — Soporte transaccional automático en todos los métodos públicos
 
-**Ruta base:** `/api/v1/auth` · **Seguridad:** Público (sin autenticación)
+### 8.1 Implementaciones SP (11)
 
-Maneja la autenticación principal y la emisión de tokens JWT.
+Patrón uniforme: Método → invoca SP del repositorio → resultado `Object[]` → `SpResultConverter` → DTO Response.
 
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/token` | `grantType`, `username?`, `password?`, `withRefreshToken`, `refreshToken?` | Emite tokens JWT. `grantType=password`: autentica y retorna access_token (15min) y opcionalmente refresh_token (24h). Si 2FA está habilitado, retorna `pre_auth_token` (5min). `grantType=refresh_token`: renueva access_token |
-| POST | `/2fa-verify` | `preAuthToken`, `code?`, `backupCode?` | Completa login 2FA. Valida código TOTP o código de respaldo contra el pre_auth_token, retorna tokens completos |
-
-### 8.2 `TwoFactorAuthController`
-
-**Ruta base:** `/api/v1/2fa` · **Seguridad:** Mixta
-
-Gestión de autenticación de dos factores.
-
-| Método | Ruta | Seguridad | Descripción |
-|---|---|---|---|
-| POST | `/setup` | Autenticado | Genera secreto TOTP, URI para QR, códigos de respaldo |
-| POST | `/verify` | Autenticado | Primera verificación TOTP → activa 2FA |
-| DELETE | `/disable` | Autenticado | Desactiva 2FA (requiere TOTP válido) |
-| GET | `/status` | Autenticado | Retorna estado de 2FA |
-| POST | `/backup-codes/regenerate` | Autenticado | Regenera códigos de respaldo (requiere TOTP) |
-| POST | `/validate` | Público | Valida código TOTP durante flujo de login |
-| POST | `/validate-backup` | Público | Valida código de respaldo durante login |
-
-### 8.3 `AcademicCalendarController`
-
-**Ruta base:** `/api/v1/academic-calendar` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `IAcademicCalendarRequest` body | Crear calendario |
-| PUT | `/{idacademiccalendar}` | Path + `UAcademicCalendarRequest` body | Actualizar calendario |
-| DELETE | `/{id}` | Path | Eliminar calendario |
-| GET | `/` | `onlyActive?` query param | Listar calendarios |
-
-### 8.4 `ApplicationsController`
-
-**Ruta base:** `/api/v1/applications` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| GET | `/` | — | Listar todas las solicitudes |
-| GET | `/{id}` | Path | Obtener solicitud por ID |
-| GET | `/user/{userId}` | Path | Solicitudes por usuario |
-| GET | `/priority/{priority}` | Path | Solicitudes por prioridad |
-| POST | `/` | `CApplicationRequest` body | Crear solicitud (201) |
-| PUT | `/{id}` | Path + `UApplicationRequest` body | Actualizar solicitud |
-| DELETE | `/{id}` | Path | Eliminar solicitud (204) |
-| PATCH | `/{id}/resolve` | Path + `resolution` query | Resolver solicitud |
-| PATCH | `/{id}/reject` | Path + `rejectionReasonId` query | Rechazar solicitud |
-
-### 8.5 `ApplicationStageHistoryController`
-
-**Ruta base:** `/api/v1/application-stage-history` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.6 `AttachedDocumentsController`
-
-**Ruta base:** `/api/v1/attached-documents` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.7 `CareerController`
-
-**Ruta base:** `/api/v1/careers` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CCareersRequest` body | Crear carrera (SP) |
-| PUT | `/{idcareer}` | Path + `UCareersRequest` body | Actualizar carrera (SP) |
-| DELETE | `/{idcareer}` | Path | Eliminar carrera (SP) |
-| GET | `/` | `facultyid?` query param | Listar carreras (SP), filtro opcional por facultad |
-
-### 8.8 `ConfigurationController`
-
-**Ruta base:** `/api/v1/configuration` · **Seguridad:** `hasAuthority('SCOPE_ROLE_ADMIN')`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CConfigurationRequest` body | Crear configuración (SP) |
-| PUT | `/{id}` | Path + `UConfigurationRequest` body | Actualizar configuración (SP) |
-| DELETE | `/{idconfiguration}` | Path | Eliminar configuración (SP) |
-| GET | `/` | — | Listar configuraciones (SP) |
-
-### 8.9 `CredentialsController`
-
-**Ruta base:** `/api/v1/credentials` · **Seguridad:** `isAuthenticated()` (clase); la mayoría de endpoints requiere `ROLE_ADMIN`
-
-| Método | Ruta | Seguridad | Descripción |
-|---|---|---|---|
-| GET | `/` | ADMIN | Listar todas las credenciales |
-| GET | `/{id}` | ADMIN | Obtener credencial por ID |
-| POST | `/` | ADMIN | Crear credencial (201) |
-| POST | `/{id}/change-password` | Autenticado (verificación de propiedad) | Cambiar contraseña |
-| POST | `/{id}/reset-password` | ADMIN | Resetear a contraseña temporal |
-| GET | `/{id}/password-expired` | Autenticado | Verificar expiración de contraseña |
-| POST | `/{id}/lock` | ADMIN | Bloquear cuenta |
-| POST | `/{id}/unlock` | ADMIN | Desbloquear cuenta |
-| DELETE | `/{id}` | ADMIN | Eliminar credencial (204) |
-
-### 8.10 `DeadlineruleControllers`
-
-**Ruta base:** `/api/v1/deadlinerules` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CDeadlineRuleRequest` body | Crear regla (SP) |
-| PUT | `/{id}` | Path + `UDeadlineRuleRequest` body | Actualizar regla (SP) |
-| DELETE | `/{id}` | Path | Eliminar regla (SP) |
-| GET | `/` | `onlyActive?` query param | Listar reglas (SP) |
-
-### 8.11 `DigitalSignaturesController`
-
-**Ruta base:** `/api/v1/digital-signatures` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.12 `DocumentsGeneratedController`
-
-**Ruta base:** `/api/v1/documents-generated` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.13 `DocumentTemplateController`
-
-**Ruta base:** `/api/v1/document-templates` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CDocumentTemplateRequest` body | Crear plantilla (SP) |
-| PUT | `/{id}` | Path + `UDocumentTemplateRequest` body | Actualizar plantilla (SP) |
-| DELETE | `/{idtemplate}` | Path | Eliminar plantilla (SP) |
-| GET | `/` | `onlyActive?` query param | Listar plantillas (SP) |
-
-### 8.14 `FacultyController`
-
-**Ruta base:** `/api/v1/faculty` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CFacultyRequest` body | Crear facultad (SP) |
-| PUT | `/{id}` | Path + `UFacultyRequest` body | Actualizar facultad (SP) |
-| DELETE | `/{idfaculty}` | Path | Eliminar facultad (SP) |
-| GET | `/` | — | Listar facultades (SP) |
-
-### 8.15 `NotificationController`
-
-**Ruta base:** `/api/v1/notifications` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.16 `NotificationTypeController`
-
-**Ruta base:** `/api/v1/notification-types` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.17 `PermissionController`
-
-**Ruta base:** `/api/v1/permissions` · **Seguridad:** `hasAuthority('SCOPE_ROLE_ADMIN')`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CPermissionRequest` body | Crear permiso (SP) |
-| PUT | `/{id}` | Path + `UPermissionRequest` body | Actualizar permiso (SP) |
-| DELETE | `/{idpermission}` | Path | Eliminar permiso (SP) |
-| GET | `/` | — | Listar permisos (SP) |
-
-### 8.18 `ProceduresController`
-
-**Ruta base:** `/api/v1/procedures` · **Seguridad:** `isAuthenticated()` (clase); escritura requiere `ROLE_ADMIN`
-
-| Método | Ruta | Seguridad | Descripción |
-|---|---|---|---|
-| GET | `/legacy` | Autenticado | Legacy: listar entidades crudas |
-| GET | `/legacy/{id}` | Autenticado | Legacy: obtener entidad cruda |
-| GET | `/` | Autenticado | Listar trámites activos (DTOs) |
-| GET | `/all` | ADMIN | Listar todos incluyendo inactivos |
-| GET | `/{id}` | Autenticado | Obtener trámite por ID |
-| GET | `/code/{code}` | Autenticado | Obtener por código |
-| GET | `/workflow/{workflowId}` | Autenticado | Obtener por workflow |
-| POST | `/` | ADMIN | Crear trámite (201) |
-| PUT | `/{id}` | ADMIN | Actualizar trámite |
-| POST | `/{id}/activate` | ADMIN | Activar trámite |
-| POST | `/{id}/deactivate` | ADMIN | Desactivar trámite |
-| GET | `/{id}/requires-2fa` | Autenticado | Verificar si requiere 2FA |
-| DELETE | `/{id}` | ADMIN | Eliminar trámite (204) |
-
-### 8.19 `ProcessingStageController`
-
-**Ruta base:** `/api/v1/processing-stages` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CProcessingStageRequest` body | Crear etapa (SP) |
-| PUT | `/{id}` | Path + `UProcessingStageRequest` body | Actualizar etapa (SP) |
-| DELETE | `/{idprocessingstage}` | Path | Eliminar etapa (SP) |
-| GET | `/` | — | Listar etapas (SP) |
-
-### 8.20 `RefreshTokenController`
-
-**Ruta base:** `/api/v1/refresh-tokens` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.21 `RejectReasonController`
-
-**Ruta base:** `/api/v1/reject-reason` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CRejectionReasonRequest` body | Crear razón (SP) |
-| PUT | `/{id}` | Path + `URejectionReasonRequest` body | Actualizar razón (SP) |
-| DELETE | `/{idrejectionreason}` | Path | Eliminación lógica (SP, active=false) |
-| GET | `/` | `onlyActive?` query param | Listar razones (SP) |
-
-### 8.22 `RequirementsController`
-
-**Ruta base:** `/api/v1/requirements` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.23 `RolesController`
-
-**Ruta base:** `/api/v1/roles` · **Seguridad:** `hasAuthority('SCOPE_ROLE_ADMIN')`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| GET | `/legacy` | — | Legacy: listar entidades crudas |
-| GET | `/legacy/{id}` | Path | Legacy: obtener entidad cruda |
-| GET | `/` | — | Listar todos los roles (DTOs) |
-| GET | `/{id}` | Path | Obtener rol por ID |
-| GET | `/name/{roleName}` | Path | Obtener rol por nombre |
-| POST | `/` | `CRoleRequest` body | Crear rol (201) |
-| PUT | `/{id}` | Path + `URoleRequest` body | Actualizar rol |
-| DELETE | `/{id}` | Path | Eliminar rol (204) |
-| POST | `/{roleId}/permissions` | Path + `Set<Integer>` body | Asignar permisos al rol |
-| DELETE | `/{roleId}/permissions` | Path + `Set<Integer>` body | Remover permisos del rol |
-| POST | `/{roleId}/users/{userId}` | Path | Asignar rol a usuario |
-| DELETE | `/{roleId}/users/{userId}` | Path | Remover rol de usuario (204) |
-
-### 8.24 `SessionTokenController`
-
-**Ruta base:** `/api/v1/session-tokens` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.25 `StageTrackingController`
-
-**Ruta base:** `/api/v1/stage-tracking` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
-
-### 8.26 `StatesController`
-
-**Ruta base:** `/api/v1/states` · **Seguridad:** `isAuthenticated()`
-
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CStateRequest` body | Crear estado (SP) |
-| PUT | `/{id}` | Path + `UStateRequest` body | Actualizar estado (SP) |
-| DELETE | `/{idstate}` | Path | Eliminar estado (SP) |
-| GET | `/` | `category?` query param | Listar estados (SP), filtro opcional por categoría |
-
-### 8.27 `StudentsController`
-
-**Ruta base:** `/api/v1/students` · **Seguridad:** `isAuthenticated()` (clase); escritura con restricciones de rol
-
-| Método | Ruta | Seguridad | Descripción |
-|---|---|---|---|
-| GET | `/legacy` | Autenticado | Legacy: listar entidades crudas |
-| GET | `/legacy/{id}` | Autenticado | Legacy: obtener entidad cruda |
-| GET | `/` | Autenticado | Listar estudiantes activos (DTOs) |
-| GET | `/{id}` | Autenticado | Obtener estudiante por ID |
-| GET | `/career/{careerId}` | Autenticado | Estudiantes por carrera |
-| GET | `/semester/{semester}/parallel/{parallel}` | Autenticado | Por semestre y paralelo |
-| GET | `/user/{userId}` | Autenticado | Estudiante por usuario |
-| POST | `/` | ADMIN, COORDINATOR | Matricular estudiante (201) |
-| PUT | `/{id}` | ADMIN, COORDINATOR | Actualizar estudiante |
-| PATCH | `/{id}/status` | ADMIN, COORDINATOR | Cambiar estado |
-| POST | `/{id}/promote` | ADMIN, COORDINATOR | Promover al siguiente semestre |
-| POST | `/{id}/graduate` | ADMIN, COORDINATOR, DEAN | Graduar estudiante |
-| POST | `/{id}/withdraw` | ADMIN, COORDINATOR | Retirar estudiante |
-| POST | `/{id}/reactivate` | ADMIN, COORDINATOR, DEAN | Reactivar estudiante |
-| DELETE | `/{id}` | ADMIN | Eliminar estudiante (204) |
-
-### 8.28 `UsersController`
-
-**Ruta base:** `/api/v1/users` · **Seguridad:** `hasAuthority('SCOPE_ROLE_ADMIN')`
-
-| Método | Ruta | Descripción |
+| Clase | Repositorio | SPs Usados |
 |---|---|---|
-| GET | `/` | Listar usuarios activos |
-| GET | `/{id}` | Obtener usuario por ID |
-| POST | `/` | Crear usuario (201) |
-| PUT | `/{id}` | Actualizar usuario |
-| DELETE | `/{id}` | Eliminación suave (204) |
-| PATCH | `/{id}/deactivate` | Desactivar usuario |
-| PATCH | `/{id}/activate` | Activar usuario |
+| `AcademicCalendarServiceImpl` | `IAcademicCalendarRepository` | `spi_academiccalendar`, `spu_academiccalendar`, `spd_academiccalendar`, `fn_list_academiccalendar` |
+| `CareersServiceImpl` | `ICareersRepository` | `spi_career`, `spu_career`, `spd_career`, `fn_list_careers` |
+| `ConfigurationServiceImpl` | `IConfigurationsRepository` | `spi_configuration`, `spu_configuration`, `spd_configuration`, `fn_list_configurations` |
+| `DeadLineRulesServiceImpl` | `IDeadLineRulesRepository` | `spi_deadlinerule`, `spu_deadlinerule`, `spd_deadlinerule`, `fn_list_deadlinerules` |
+| `DocumentTemplatesServiceImpl` | `IDocumentTemplatesRepository` | `spi_documenttemplate`, `spu_documenttemplate`, `spd_documenttemplate`, `fn_list_documenttemplates` |
+| `FacultiesServiceImpl` | `IFacultiesRepository` | `spi_faculty`, `spu_faculty`, `spd_faculty`, `fn_list_faculties` |
+| `PermissionsServiceImpl` | `IPermissionsRepository` | `spi_permission`, `spu_permission`, `spd_permission`, `fn_list_permissions` |
+| `ProcessingStageServiceImpl` | `IProcessingStageRepository` | `spi_processingstage`, `spu_processingstage`, `spd_processingstage`, `fn_list_processingstage` |
+| `RejectionReasonsServiceImpl` | `IRejectionReasonsRepository` | `spi_rejectionreason`, `spu_rejectionreason`, `spd_rejectionreason`, `fn_list_rejectionreasons` |
+| `StatesServiceImpl` | `IStatesRepository` | `spi_state`, `spu_state`, `spd_state`, `fn_list_states` |
+| `WorkflowsServiceImpl` | `IWorkflowsRepository` | `spi_workflow`, `spu_workflow`, `spd_workflow`, `fn_list_workflows` |
 
-### 8.29 `WorkFlowsController`
+### 8.2 Implementaciones JPA (18)
 
-**Ruta base:** `/api/v1/work-flows` · **Seguridad:** `isAuthenticated()`
+#### `ApplicationsServiceImpl` — 219 líneas, 13 métodos
 
-| Método | Ruta | Parámetros | Descripción |
-|---|---|---|---|
-| POST | `/` | `CWorkflowRequest` body | Crear flujo de trabajo (SP) |
-| PUT | `/{id}` | Path + `UWorkflowRequest` body | Actualizar flujo (SP) |
-| DELETE | `/{idworkflow}` | Path | Eliminación lógica (SP, active=false) |
-| GET | `/` | `onlyActive?` query param | Listar flujos (SP) |
+Gestiona solicitudes/trámites estudiantiles con lógica de negocio avanzada.
 
-### 8.30 `WorkflowStagesController`
+**Validaciones:** Código de solicitud único, auto-generado con formato `SOL-{timestamp}`. Prioridad válida: `baja`, `normal`, `alta`, `urgente`.
 
-**Ruta base:** `/api/v1/workflow-stages` · **Seguridad:** `isAuthenticated()`
-
-CRUD estándar: GET `/`, GET `/{id}`, POST `/`, PUT `/{id}`, DELETE `/{id}`
+**Lógica de negocio:**
+- `resolveApplication(id, resolution)` — Establece resolución y fecha de completación
+- `rejectApplication(id, rejectionReasonId)` — Asocia motivo de rechazo validando existencia
 
 ---
 
-## 9. DTOs (Data Transfer Objects)
-
-Total de **91 DTOs** organizados por dominio. Convención de nombres:
-
-| Prefijo/Sufijo | Propósito |
-|---|---|
-| `C*Request` / `I*Request` | DTO de creación/inserción |
-| `U*Request` | DTO de actualización |
-| `D*Request` | DTO de eliminación |
-| `*Response` | DTO de respuesta |
-
-Todos son clases Java anotadas con Lombok `@Data`.
-
-### 9.1 Calendario Académico
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `IAcademicCalendarRequest` | Crear calendario | `calendarname` (@NotBlank, @Size 3-100), `academicperiod` (@NotBlank), `startdate` (@NotNull), `enddate` (@NotNull), `active` |
-| `UAcademicCalendarRequest` | Actualizar | `idacademiccalendar`, `calendarname`, `academicperiod`, `startdate`, `enddate`, `active` |
-| `DAcademicCalendarRequest` | Eliminar | `idacademiccalendar` |
-| `AcademicCalendarResponse` | Respuesta | Todos los campos del calendario |
-
-### 9.2 Solicitudes
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CApplicationRequest` | Crear solicitud | `applicationCode` (@NotBlank, @Size max 100), `estimatedCompletionDate` (@NotNull, @FutureOrPresent), `priority` (@Pattern: baja\|normal\|alta\|urgente), `proceduresIdProcedure` (@NotNull), `applicantUserId` (@NotNull) |
-| `UApplicationRequest` | Actualizar | Todos los campos con las mismas validaciones |
-| `ApplicationResponse` | Respuesta | IDs de relaciones + fechas + resolución |
-
-### 9.3 Historial de Etapas
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CApplicationStageHistoryRequest` | Crear entrada de historial | `applicationIdApplication`, `stageTrackingId`, `processedByUserId`, `comments` |
-| `UApplicationStageHistoryRequest` | Actualizar | Todos + `idHistory` |
-| `ApplicationStageHistoryResponse` | Respuesta | Todos + `enteredAt`, `exitedAt` |
-
-### 9.4 Documentos Adjuntos
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CAttachedDocumentRequest` | Subir documento | `applicationsIdApplication`, `requirementId`, `fileName`, `filePath`, `fileSizeBytes`, `mimeType`, `uploadedByUserId` |
-| `UAttachedDocumentRequest` | Actualizar | Todos + `idAttachedDocument` |
-| `AttachedDocumentResponse` | Respuesta | Todos + `uploadDate` |
-
-### 9.5 Carreras
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CCareersRequest` | Crear carrera | `careername` (@NotBlank, @Size 3-150), `careercode` (@NotBlank, @Size 2-20), `facultiesidfaculty` (@NotNull) |
-| `UCareersRequest` | Actualizar | `idcareer`, `careername`, `careercode`, `facultiesidfaculty`, `coordinatoriduser` |
-| `CareersResponse` | Respuesta | Incluye `facultyname` del JOIN |
-
-### 9.6 Configuraciones
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CConfigurationRequest` | Crear config | `notificationfrequency` (@Pattern: diaria\|semanal\|mensual\|inmediata) |
-| `UConfigurationRequest` | Actualizar | `idconfiguration` + todos los campos |
-| `ConfigurationResponse` | Respuesta | Todos los campos de configuración |
-
-### 9.7 Credenciales
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CCredentialRequest` | Crear credencial | `username` (@NotBlank, @Email), `passwordHash` (@NotBlank, @Size 8-100, @Pattern requiere complejidad) |
-| `UCredentialRequest` | Actualizar | `idCredentials`, `username`, `passwordHash` |
-| `CredentialResponse` | Respuesta | `idCredentials`, `username`, `lastLogin`, `failedAttempts`, `accountLocked`, `passwordExpiryDate` — **nunca expone passwordHash** |
-
-### 9.8 Reglas de Plazo
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CDeadlineRuleRequest` | Crear regla | `rulename`, `procedurecategory`, `basedeadlinedays`, `warningdaysbefore`, `active` |
-| `UDeadlineRuleRequest` | Actualizar | `iddeadlinerule` + todos |
-| `DeadlineRuleResponse` | Respuesta | Todos los campos |
-
-### 9.9 Firmas Digitales
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CDigitalSignatureRequest` | Crear firma | `userIdUser`, `certificatePath`, `certificateSerial`, `issuer`, `validFrom`, `validUntil`, `signatureAlgorithm`, `active` |
-| `UDigitalSignatureRequest` | Actualizar | `idDigitalSignature` + todos |
-| `DigitalSignatureResponse` | Respuesta | Todos + `createdAt` |
-
-### 9.10 Documentos Generados
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CDocumentGeneratedRequest` | Crear documento | `applicationsIdApplication`, `templateId`, `documentType`, `documentPath`, `generatedByUserId`, `digitalSignatureId` |
-| `UDocumentGeneratedRequest` | Actualizar | `idDocumentGenerated` + todos |
-| `DocumentGeneratedResponse` | Respuesta | Todos + `generatedAt`, `signatureTimestamp` |
-
-### 9.11 Plantillas de Documentos
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CDocumentTemplateRequest` | Crear plantilla | `templatename` (@NotBlank, @Size 3-100), `templatecode` (@NotBlank, @Size 2-50), `documenttype` (@NotBlank) |
-| `UDocumentTemplateRequest` | Actualizar | `idtemplate` + todos sin validación |
-| `DocumentTemplateResponse` | Respuesta | Todos + `createdat`, `updatedat` |
-
-### 9.12 Facultades
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CFacultyRequest` | Crear facultad | `facultyname` (@NotBlank, @Size 3-150), `facultycode` (@NotBlank, @Size 2-20) |
-| `UFacultyRequest` | Actualizar | `idfaculty` + todos |
-| `FacultyResponse` | Respuesta | `idfaculty`, `facultyname`, `facultycode`, `deaniduser` |
-
-### 9.13 Notificaciones
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CNotificationRequest` | Crear notificación | `notificationName`, `message`, `notificationTypeIdNotificationType`, `applicationId`, `recipientUserId`, `deliveryChannel` |
-| `UNotificationRequest` | Actualizar | Todos + `deliveryStatus`, `retryCount` |
-| `NotificationResponse` | Respuesta | Todos + `sentAt`, `readAt`, `errorMessage` |
-
-### 9.14 Tipos de Notificación
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CNotificationTypeRequest` | Crear tipo | `typename`, `typedescription` |
-| `UNotificationTypeRequest` | Actualizar | `idNotificationType` + todos |
-| `NotificationTypeResponse` | Respuesta | Todos |
-
-### 9.15 Permisos
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CPermissionRequest` | Crear permiso | `code` (@NotBlank, @Pattern `^[A-Z_]+$`, @Size 3-50), `description` (@Size max 255) |
-| `UPermissionRequest` | Actualizar | `idpermission` + todos |
-| `PermissionResponse` | Respuesta | Todos |
-
-### 9.16 Procedimientos/Trámites
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CProcedureRequest` | Crear trámite | `procedurename` (@NotBlank, @Size 3-100), `description` (@Size max 500), `maxduration` (@NotNull, @Min 1, @Max 365), `workflowidworkflow` (@NotNull) |
-| `UProcedureRequest` | Actualizar | `idProcedure` + todos |
-| `ProcedureResponse` | Respuesta | Todos + `createdAt` |
-
-### 9.17 Etapas de Procesamiento
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CProcessingStageRequest` | Crear etapa | `stagename` (@NotBlank, @Size 3-100), `stagecode` (@NotBlank, @Size 2-50), `stageorder` (@NotNull, @Min 1) |
-| `UProcessingStageRequest` | Actualizar | `idprocessingstage` + todos |
-| `ProcessingStageResponse` | Respuesta | Todos |
-
-### 9.18 Refresh Tokens
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CRefreshTokenRequest` | Crear token | `userId`, `token`, `expiresAt` |
-| `URefreshTokenRequest` | Actualizar | `id` + todos + `revoked` |
-| `RefreshTokenResponse` | Respuesta | Todos + `createdAt` |
-
-### 9.19 Razones de Rechazo
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CRejectionReasonRequest` | Crear razón | `reasoncode` (@NotBlank, @Size 2-50), `reasondescription` (@NotBlank, @Size 5-500), `category` (@NotBlank) |
-| `URejectionReasonRequest` | Actualizar | `idrejectionreason` + todos |
-| `RejectionReasonResponse` | Respuesta | Todos |
-
-### 9.20 Requisitos del Trámite
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CRequirementRequest` | Crear requisito | `proceduresIdProcedure`, `requirementName`, `requirementDescription`, `requirementType`, `isMandatory`, `displayOrder` |
-| `URequirementRequest` | Actualizar | `id` + todos |
-| `RequirementResponse` | Respuesta | Todos |
-
-### 9.21 Roles
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CRoleRequest` | Crear rol | `roleName` (@NotBlank, @Size 3-50, @Pattern `^ROLE_[A-Z_]+$`), `roleDescription` (@Size max 255) |
-| `URoleRequest` | Actualizar | `idRole` + todos |
-| `RoleResponse` | Respuesta | Incluye lista anidada de `PermissionInfo` (`idPermission`, `code`, `description`) |
-
-### 9.22 Session Tokens
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CSessionTokenRequest` | Crear sesión | `userId`, `token`, `ipAddress`, `userAgent` |
-| `USessionTokenRequest` | Actualizar | `idSession` + todos |
-| `SessionTokenResponse` | Respuesta | Todos + `createdAt`, `expiresAt`, `lastActivity` |
-
-### 9.23 Seguimiento de Etapas
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CStageTrackingRequest` | Crear seguimiento | `stateIdState`, `processingStageIdProcessingStage`, `assignedToUserId`, `notes` |
-| `UStageTrackingRequest` | Actualizar | `idStageTracking` + todos |
-| `StageTrackingResponse` | Respuesta | Todos + `enteredAt`, `completedAt` |
-
-### 9.24 Estados
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CStateRequest` | Crear estado | `statename` (@NotBlank, @Size 2-50), `statecategory` (@NotBlank) |
-| `UStateRequest` | Actualizar | `idstate` (@NotNull), `statename` (@Size 2-50) |
-| `StateResponse` | Respuesta | Todos |
-
-### 9.25 Estudiantes
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CStudentRequest` | Matricular estudiante | `semester` (@NotBlank, @Pattern 1-10), `parallel` (@NotBlank, @Pattern A-Z), `usersIdUser` (@NotNull), `careersIdCareer` (@NotNull), `status` (@Pattern activo\|inactivo\|graduado\|retirado) |
-| `UStudentRequest` | Actualizar | `idStudent` (@NotNull) + validaciones actualizadas + `suspendido` como estado adicional |
-| `StudentResponse` | Respuesta | Incluye `userName`, `userEmail`, `careerName` desnormalizados |
-
-### 9.26 Usuarios
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CUserRequest` | Crear usuario | `names` (@NotBlank, @Size 2-255), `surnames` (@NotBlank, @Size 2-255), `cardId` (@NotBlank, @Pattern `^[0-9]{10}$`), `institutionalEmail` (@NotBlank, @Email, @Pattern `.*@uteq.edu.ec$`), `phoneNumber` (@Pattern `^[0-9]{10}$`), `configurationsIdConfiguration` (@NotNull) |
-| `UUserRequest` | Actualizar | `idUser` (@NotNull) + todas las validaciones |
-| `UserResponse` | Respuesta | Todos + `createdAt`, `updatedAt`, `active` |
-
-### 9.27 Flujos de Trabajo
-
-| DTO | Propósito | Campos clave con validación |
-|---|---|---|
-| `CWorkflowRequest` | Crear flujo | `workflowname` (@NotBlank, @Size 3-100), `workflowdescription` (@Size max 500) |
-| `UWorkflowRequest` | Actualizar | `idworkflow` (@NotNull) + todos |
-| `WorkflowResponse` | Respuesta | Todos + `createdat` |
-
-### 9.28 Etapas de Flujo
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `CWorkflowStageRequest` | Crear link workflow-etapa | `workflowIdWorkflow`, `processingStageIdProcessingStage`, `sequenceOrder`, `isOptional` |
-| `UWorkflowStageRequest` | Actualizar | `idWorkflowStage` + todos |
-| `WorkflowStageResponse` | Respuesta | Todos |
-
-### 9.29 Autenticación 2FA
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `TwoFactorVerifyRequest` | Verificar código TOTP | `code` (@NotNull, Integer) |
-| `TwoFactorBackupRequest` | Usar código de respaldo | `backupCode` (@NotBlank, String) |
-| `TwoFactorSetupResponse` | Respuesta de setup 2FA | `secretKey`, `qrCodeUri`, `backupCodes` (List) |
-| `TwoFactorAuthResponse` | Estado de 2FA | `enabled`, `verifiedAt` |
-
-### 9.30 Respuesta de Error
-
-| DTO | Propósito | Campos |
-|---|---|---|
-| `ApiErrorResponse` | Respuesta de error estandarizada | `timestamp`, `status`, `error`, `message`, `path`, `errorCode`, `fieldErrors` (List\<FieldError\>), `details` (Map). Clase interna `FieldError`: `field`, `message`, `rejectedValue`. Usa `@JsonInclude(NON_NULL)`. Métodos fábrica estáticos `of()` y `withFieldErrors()` |
+#### `ApplicationStageHistoryServiceImpl` — CRUD básico (4 métodos)
 
 ---
 
-## 10. Excepciones (Exceptions)
-
-### `GlobalExceptionHandler`
-
-`@RestControllerAdvice` que intercepta todas las excepciones lanzadas por controladores y retorna respuestas consistentes en formato `ApiErrorResponse`.
-
-| Excepción manejada | Código HTTP | Descripción |
-|---|---|---|
-| `MethodArgumentNotValidException` | 400 | Errores de validación de bean con detalle por campo |
-| `MissingServletRequestParameterException` | 400 | Parámetro de request faltante |
-| `MethodArgumentTypeMismatchException` | 400 | Tipo de argumento incorrecto |
-| `ResourceNotFoundException` | 404 | Recurso no encontrado |
-| `DuplicateResourceException` | 409 | Recurso duplicado |
-| `BadRequestException` | 400 | Request inválido (genérico) |
-| `BusinessException` | 422 | Violación de regla de negocio (incluye `errorCode`) |
-| `UnauthorizedException` | 401 | Acceso no autorizado |
-| `AccessDeniedException` | 403 | Acceso denegado (sin permisos) |
-| `AuthenticationException` / `BadCredentialsException` | 401 | Credenciales inválidas |
-| `Exception` (genérica) | 500 | Error interno (fallback, se registra en logs) |
-
-### Excepciones personalizadas
-
-| Excepción | HTTP | Campos adicionales | Uso |
-|---|---|---|---|
-| `BadRequestException` | 400 | `message` | Datos de solicitud inválidos |
-| `BusinessException` | 422 | `message`, `errorCode` | Violación de reglas de negocio con código específico |
-| `DuplicateResourceException` | 409 | `resourceName`, `fieldName`, `fieldValue` | Intento de crear recurso duplicado |
-| `ResourceNotFoundException` | 404 | `resourceName`, `fieldName`, `fieldValue` | Recurso no encontrado por ID o campo |
-| `UnauthorizedException` | 401 | `message` | Acceso sin autenticación válida |
+#### `AttachedDocumentsServiceImpl` — CRUD básico (4 métodos)
 
 ---
 
-## 11. Diagrama de Relaciones entre Entidades
+#### `CredentialsServiceImpl` — 213 líneas, 17 métodos
+
+Gestión avanzada de credenciales con política de seguridad.
+
+**Políticas de seguridad implementadas:**
+- **Máximo 5 intentos fallidos** → bloqueo automático de cuenta (`accountLocked = true`)
+- **Expiración de contraseña** → 90 días desde la fecha de modificación
+- **Reset de contraseña** → genera password temporal de 12 caracteres
+- **Cambio de contraseña** → valida password anterior, hashea con BCrypt, actualiza `dateModification` y `passwordExpiryDate`
+- **Registro de login exitoso** → resetea `failedAttempts` a 0, actualiza `lastLogin`
+
+---
+
+#### `DigitalSignaturesServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+#### `DocumentsGeneratedServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+#### `NotificationServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+#### `NotificationTypeServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+#### `ProceduresServiceImpl` — 194 líneas, 15 métodos
+
+Gestión de trámites/procedimientos con lógica de negocio.
+
+**Características:**
+- Código de procedimiento auto-generado (`PROC-{timestamp}`)
+- Nombre y código único validados
+- Activación/desactivación con estados (`active = true/false`)
+- Consulta `requires2FA` para verificar si un trámite requiere autenticación de dos factores
+- Filtro por workflow asociado
+
+---
+
+#### `RefreshTokenServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+#### `RequirementsOfTheProcedureServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+#### `RolesServiceImpl` — 202 líneas, 14 métodos
+
+Gestión de roles con protección de roles del sistema y gestión de permisos.
+
+**Lógica de negocio:**
+- **Roles protegidos** (no eliminables): `ROLE_ADMIN`, `ROLE_STUDENT`, `ROLE_COORDINATOR`, `ROLE_DEAN`
+- `assignPermissions(roleId, permissionIds)` → asigna permisos al rol
+- `removePermissions(roleId, permissionIds)` → remueve permisos del rol
+- `assignRoleToUser(roleId, userId)` → asigna rol a usuario
+- `removeRoleFromUser(roleId, userId)` → remueve rol de usuario
+- Nombre de rol único validado
+
+---
+
+#### `SessionTokenServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+#### `StageTrackingServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+#### `StudentsServiceImpl` — 254 líneas, 17 métodos
+
+Gestión de estudiantes con máquina de estados completa.
+
+**Máquina de estados:**
 
 ```
-                    ┌──────────────┐
-                    │  Faculties   │
-                    │  (facultad)  │◄──── dean: Users
-                    └──────┬───────┘
-                           │ 1
-                           │
-                           ▼ *
-                    ┌──────────────┐
-                    │   Careers    │
-                    │  (carrera)   │◄──── coordinator: Users
-                    └──────┬───────┘
-                           │ 1
-                           │
-                           ▼ *
-                    ┌──────────────┐        ┌──────────────┐
-                    │   Students   │───────►│    Users     │
-                    │ (estudiante) │        │  (usuario)   │
-                    └──────────────┘        └──────┬───────┘
+           enrollStudent()
+               ↓
+           ┌──────┐
+           │activo│
+           └──┬───┘
+              │
+    ┌─────────┼─────────┐
+    ↓         ↓         ↓
+promover  graduar    retirar
+    ↓         ↓         ↓
+┌────────┐ ┌────────┐ ┌────────┐
+│promovido│ │graduado│ │retirado│
+└────────┘ └────────┘ └────┬───┘
+                           ↓
+                       reactivar
+                           ↓
+                       ┌──────┐
+                       │activo│
+                       └──────┘
+```
+
+**Validaciones:**
+- Un usuario solo puede ser estudiante una vez (`existsByUserIdUser`)
+- `promoteToNextSemester()` → incrementa semestre numéricamente (1→2, 2→3...)
+- Solo estudiantes `activo` pueden ser promovidos/graduados/retirados
+- Solo estudiantes `retirado` pueden ser reactivados
+
+---
+
+#### `TwoFactorAuthServiceImpl` — 243 líneas, 12 métodos
+
+Autenticación de dos factores con Google Authenticator (TOTP).
+
+**Funcionalidades:**
+- `setup2FA(email)` → genera secretKey, construye URI para QR (`otpauth://totp/SGTE:{email}?secret=...&issuer=SGTE`), genera 8 códigos de respaldo
+- `verifyAndEnable2FA(email, code)` → verifica primer código TOTP y activa 2FA
+- `disable2FA(email, code)` → desactiva 2FA (requiere código válido como confirmación)
+- `validateCode(email, code)` → valida código TOTP de 6 dígitos
+- `validateBackupCode(email, backupCode)` → valida y consume código de respaldo (un solo uso)
+- `regenerateBackupCodes(email, code)` → genera nuevos 8 códigos de respaldo
+
+---
+
+#### `UsersServiceImpl` — 178 líneas, 12 métodos
+
+Gestión de usuarios con soft-delete y validaciones de unicidad.
+
+**Validaciones:**
+- Email institucional único
+- Cédula (cardId) única
+- `deleteUser(id)` → **soft delete** (`active = false`, `statement = false`)
+- `deactivateUser(id)` / `activateUser(id)` → toggle de estado activo
+
+---
+
+#### `WorkflowStagesServiceImpl` — CRUD básico (4 métodos)
+
+---
+
+### 8.3 `CustomUserDetailsService` — 69 líneas
+
+Ver sección [4.1](#41-customuserdetailsservicejava) para detalles completos.
+
+---
+
+## 9. Controladores (Controllers)
+
+Total: **30 controladores**. Todos bajo `com.app.uteq.Controllers`.
+
+**Convención de seguridad:**
+- Nivel de clase: `@PreAuthorize("isAuthenticated()")` (excepto AuthController y TwoFactorAuthController)
+- Nivel de método: `@PreAuthorize("hasAuthority('CODIGO_PERMISO')")`
+
+**Convención de versionado API:** Todos los endpoints usan prefijo `/api/v1/`
+
+### 9.1 `AcademicCalendarController`
+
+**Base:** `/api/v1/academic-calendar` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `CAL_CREAR` | `createCalendar(@Valid @RequestBody IAcademicCalendarRequest)` |
+| PUT | `/{idacademiccalendar}` | `CAL_MODIFICAR` | `actualizar(@PathVariable Integer, @Valid @RequestBody UAcademicCalendarRequest)` |
+| DELETE | `/{id}` | `CAL_ELIMINAR` | `eliminar(@PathVariable Integer)` |
+| GET | `/` | `CAL_LISTAR` | `listar(@RequestParam(required=false) Boolean onlyActive)` |
+
+---
+
+### 9.2 `ApplicationsController`
+
+**Base:** `/api/v1/applications` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `SOL_LISTAR` | `findAll()` |
+| GET | `/{id}` | `SOL_VER` | `findById(@PathVariable Integer)` |
+| GET | `/user/{userId}` | `SOL_VER` | `findByUserId(@PathVariable Integer)` |
+| GET | `/priority/{priority}` | `SOL_LISTAR` | `findByPriority(@PathVariable String)` |
+| POST | `/` | `SOL_CREAR` | `create(@Valid @RequestBody CApplicationRequest)` |
+| PUT | `/{id}` | `SOL_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UApplicationRequest)` |
+| DELETE | `/{id}` | `SOL_ELIMINAR` | `delete(@PathVariable Integer)` |
+| PATCH | `/{id}/resolve` | `SOL_RESOLVER` | `resolve(@PathVariable Integer, @RequestParam String)` |
+| PATCH | `/{id}/reject` | `SOL_RECHAZAR` | `reject(@PathVariable Integer, @RequestParam Integer)` |
+
+---
+
+### 9.3 `ApplicationStageHistoryController`
+
+**Base:** `/api/v1/application-stage-history` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `HIST_LISTAR` | `findAll()` |
+| GET | `/{id}` | `HIST_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `HIST_CREAR` | `create(@RequestBody ApplicationStageHistory)` |
+| PUT | `/{id}` | `HIST_MODIFICAR` | `update(@PathVariable Integer, @RequestBody ApplicationStageHistory)` |
+| DELETE | `/{id}` | `HIST_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.4 `AttachedDocumentsController`
+
+**Base:** `/api/v1/attached-documents` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `DOCADJ_LISTAR` | `findAll()` |
+| GET | `/{id}` | `DOCADJ_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `DOCADJ_CREAR` | `create(@RequestBody AttachedDocuments)` |
+| PUT | `/{id}` | `DOCADJ_MODIFICAR` | `update(@PathVariable Integer, @RequestBody AttachedDocuments)` |
+| DELETE | `/{id}` | `DOCADJ_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.5 `AuthController`
+
+**Base:** `/api/v1/auth` · **Seguridad:** Público (`permitAll`)
+
+Ver sección [4.2](#42-authcontrollerjava) para detalles completos.
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/token` | Ninguno | `generateToken(grantType, username, password, withRefreshToken, refreshToken)` |
+| POST | `/2fa-verify` | Ninguno | `verify2FA(preAuthToken, code, backupCode)` |
+| POST | `/logout` | Req. Auth | `logout(Authentication)` |
+
+---
+
+### 9.6 `CareerController`
+
+**Base:** `/api/v1/careers` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `CARRERA_CREAR` | `create(@Valid @RequestBody CCareersRequest)` |
+| PUT | `/{idcareer}` | `CARRERA_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UCareersRequest)` |
+| DELETE | `/{idcareer}` | `CARRERA_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `CARRERA_LISTAR` | `list(@RequestParam(required=false) Integer facultyid)` |
+
+---
+
+### 9.7 `ConfigurationController`
+
+**Base:** `/api/v1/configuration` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `CONFIG_CREAR` | `create(@Valid @RequestBody CConfigurationRequest)` |
+| PUT | `/{id}` | `CONFIG_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UConfigurationRequest)` |
+| DELETE | `/{idconfiguration}` | `CONFIG_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `CONFIG_LISTAR` | `list()` |
+
+---
+
+### 9.8 `CredentialsController`
+
+**Base:** `/api/v1/credentials` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `CRED_LISTAR` | `findAll()` |
+| GET | `/{id}` | `CRED_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `CRED_CREAR` | `create(@Valid @RequestBody CCredentialRequest)` |
+| POST | `/{id}/change-password` | `CRED_CAMBIAR_PASS` | `changePassword(@PathVariable Integer, @RequestBody Map<String,String>, Authentication)` |
+| POST | `/{id}/reset-password` | `CRED_RESETEAR_PASS` | `resetPassword(@PathVariable Integer)` |
+| GET | `/{id}/password-expired` | (clase) | `isPasswordExpired(@PathVariable Integer)` |
+| POST | `/{id}/lock` | `CRED_BLOQUEAR` | `lockAccount(@PathVariable Integer)` |
+| POST | `/{id}/unlock` | `CRED_DESBLOQUEAR` | `unlockAccount(@PathVariable Integer)` |
+| DELETE | `/{id}` | `CRED_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.9 `DeadlineruleControllers`
+
+**Base:** `/api/v1/deadlinerules` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `REGLA_CREAR` | `create(@RequestBody CDeadlineRuleRequest)` |
+| PUT | `/{id}` | `REGLA_MODIFICAR` | `update(@PathVariable Integer, @RequestBody UDeadlineRuleRequest)` |
+| DELETE | `/{id}` | `REGLA_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `REGLA_LISTAR` | `list(@RequestParam(required=false) Boolean onlyActive)` |
+
+---
+
+### 9.10 `DigitalSignaturesController`
+
+**Base:** `/api/v1/digital-signatures` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `FIRMA_LISTAR` | `findAll()` |
+| GET | `/{id}` | `FIRMA_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `FIRMA_CREAR` | `create(@RequestBody DigitalSignatures)` |
+| PUT | `/{id}` | `FIRMA_MODIFICAR` | `update(@PathVariable Integer, @RequestBody DigitalSignatures)` |
+| DELETE | `/{id}` | `FIRMA_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.11 `DocumentsGeneratedController`
+
+**Base:** `/api/v1/documents-generated` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `DOCGEN_LISTAR` | `findAll()` |
+| GET | `/{id}` | `DOCGEN_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `DOCGEN_CREAR` | `create(@RequestBody DocumentsGenerated)` |
+| PUT | `/{id}` | `DOCGEN_MODIFICAR` | `update(@PathVariable Integer, @RequestBody DocumentsGenerated)` |
+| DELETE | `/{id}` | `DOCGEN_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.12 `DocumentTemplateController`
+
+**Base:** `/api/v1/document-templates` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `PLANTILLA_CREAR` | `create(@Valid @RequestBody CDocumentTemplateRequest)` |
+| PUT | `/{id}` | `PLANTILLA_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UDocumentTemplateRequest)` |
+| DELETE | `/{idtemplate}` | `PLANTILLA_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `PLANTILLA_LISTAR` | `list(@RequestParam(required=false) Boolean onlyActive)` |
+
+---
+
+### 9.13 `FacultyController`
+
+**Base:** `/api/v1/faculty` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `FACULTAD_CREAR` | `create(@Valid @RequestBody CFacultyRequest)` |
+| PUT | `/{id}` | `FACULTAD_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UFacultyRequest)` |
+| DELETE | `/{idfaculty}` | `FACULTAD_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `FACULTAD_LISTAR` | `list()` |
+
+---
+
+### 9.14 `NotificationController`
+
+**Base:** `/api/v1/notifications` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `NOTIF_LISTAR` | `findAll()` |
+| GET | `/{id}` | `NOTIF_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `NOTIF_CREAR` | `create(@RequestBody Notification)` |
+| PUT | `/{id}` | `NOTIF_MODIFICAR` | `update(@PathVariable Integer, @RequestBody Notification)` |
+| DELETE | `/{id}` | `NOTIF_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.15 `NotificationTypeController`
+
+**Base:** `/api/v1/notification-types` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `TIPNOTIF_LISTAR` | `findAll()` |
+| GET | `/{id}` | `TIPNOTIF_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `TIPNOTIF_CREAR` | `create(@RequestBody NotificationType)` |
+| PUT | `/{id}` | `TIPNOTIF_MODIFICAR` | `update(@PathVariable Integer, @RequestBody NotificationType)` |
+| DELETE | `/{id}` | `TIPNOTIF_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.16 `PermissionController`
+
+**Base:** `/api/v1/permissions` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `PERMISO_CREAR` | `create(@Valid @RequestBody CPermissionRequest)` |
+| PUT | `/{id}` | `PERMISO_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UPermissionRequest)` |
+| DELETE | `/{idpermission}` | `PERMISO_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `PERMISO_LISTAR` | `list()` |
+
+---
+
+### 9.17 `ProceduresController`
+
+**Base:** `/api/v1/procedures` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/legacy` | `TRAMITE_LISTAR` | `findAllLegacy()` |
+| GET | `/legacy/{id}` | `TRAMITE_VER` | `findByIdLegacy(@PathVariable Integer)` |
+| GET | `/` | `TRAMITE_LISTAR` | `findAll()` |
+| GET | `/all` | `TRAMITE_LISTAR` | `findAllIncludingInactive()` |
+| GET | `/{id}` | `TRAMITE_VER` | `findById(@PathVariable Integer)` |
+| GET | `/code/{code}` | `TRAMITE_VER` | `findByCode(@PathVariable String)` |
+| GET | `/workflow/{workflowId}` | `TRAMITE_LISTAR` | `findByWorkflow(@PathVariable Integer)` |
+| POST | `/` | `TRAMITE_CREAR` | `create(@Valid @RequestBody CProcedureRequest)` |
+| PUT | `/{id}` | `TRAMITE_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UProcedureRequest)` |
+| POST | `/{id}/activate` | `TRAMITE_ACTIVAR` | `activate(@PathVariable Integer)` |
+| POST | `/{id}/deactivate` | `TRAMITE_DESACTIVAR` | `deactivate(@PathVariable Integer)` |
+| GET | `/{id}/requires-2fa` | `TRAMITE_VER` | `requires2FA(@PathVariable Integer)` |
+| DELETE | `/{id}` | `TRAMITE_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.18 `ProcessingStageController`
+
+**Base:** `/api/v1/processing-stages` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `ETAPA_CREAR` | `create(@Valid @RequestBody CProcessingStageRequest)` |
+| PUT | `/{id}` | `ETAPA_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UProcessingStageRequest)` |
+| DELETE | `/{idprocessingstage}` | `ETAPA_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `ETAPA_LISTAR` | `list()` |
+
+---
+
+### 9.19 `RefreshTokenController`
+
+**Base:** `/api/v1/refresh-tokens` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `TOKEN_LISTAR` | `findAll()` |
+| GET | `/{id}` | `TOKEN_VER` | `findById(@PathVariable Long)` |
+| POST | `/` | `TOKEN_CREAR` | `create(@RequestBody RefreshToken)` |
+| PUT | `/{id}` | `TOKEN_MODIFICAR` | `update(@PathVariable Long, @RequestBody RefreshToken)` |
+| DELETE | `/{id}` | `TOKEN_ELIMINAR` | `delete(@PathVariable Long)` |
+
+---
+
+### 9.20 `RejectReasonController`
+
+**Base:** `/api/v1/reject-reason` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `RECHAZO_CREAR` | `create(@Valid @RequestBody CRejectionReasonRequest)` |
+| PUT | `/{id}` | `RECHAZO_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody URejectionReasonRequest)` |
+| DELETE | `/{idrejectionreason}` | `RECHAZO_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `RECHAZO_LISTAR` | `list(@RequestParam(required=false) Boolean onlyActive)` |
+
+---
+
+### 9.21 `RequirementsController`
+
+**Base:** `/api/v1/requirements` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `REQUISITO_LISTAR` | `findAll()` |
+| GET | `/{id}` | `REQUISITO_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `REQUISITO_CREAR` | `create(@RequestBody RequirementsOfTheProcedure)` |
+| PUT | `/{id}` | `REQUISITO_MODIFICAR` | `update(@PathVariable Integer, @RequestBody RequirementsOfTheProcedure)` |
+| DELETE | `/{id}` | `REQUISITO_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.22 `RolesController`
+
+**Base:** `/api/v1/roles` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/legacy` | `ROL_LISTAR` | `findAllLegacy()` |
+| GET | `/legacy/{id}` | `ROL_VER` | `findByIdLegacy(@PathVariable Integer)` |
+| GET | `/` | `ROL_LISTAR` | `findAll()` |
+| GET | `/{id}` | `ROL_VER` | `findById(@PathVariable Integer)` |
+| GET | `/name/{roleName}` | `ROL_VER` | `findByName(@PathVariable String)` |
+| POST | `/` | `ROL_CREAR` | `create(@Valid @RequestBody CRoleRequest)` |
+| PUT | `/{id}` | `ROL_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody URoleRequest)` |
+| DELETE | `/{id}` | `ROL_ELIMINAR` | `delete(@PathVariable Integer)` |
+| POST | `/{roleId}/permissions` | `ROL_ASIGNAR_PERMISO` | `assignPermissions(@PathVariable Integer, @RequestBody Set<Integer>)` |
+| DELETE | `/{roleId}/permissions` | `ROL_REMOVER_PERMISO` | `removePermissions(@PathVariable Integer, @RequestBody Set<Integer>)` |
+| POST | `/{roleId}/users/{userId}` | `ROL_ASIGNAR_USUARIO` | `assignRoleToUser(@PathVariable Integer, @PathVariable Integer)` |
+| DELETE | `/{roleId}/users/{userId}` | `ROL_REMOVER_USUARIO` | `removeRoleFromUser(@PathVariable Integer, @PathVariable Integer)` |
+
+---
+
+### 9.23 `SessionTokenController`
+
+**Base:** `/api/v1/session-tokens` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `SESION_LISTAR` | `findAll()` |
+| GET | `/{id}` | `SESION_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `SESION_CREAR` | `create(@RequestBody SessionToken)` |
+| PUT | `/{id}` | `SESION_MODIFICAR` | `update(@PathVariable Integer, @RequestBody SessionToken)` |
+| DELETE | `/{id}` | `SESION_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.24 `StageTrackingController`
+
+**Base:** `/api/v1/stage-tracking` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `SEGUIMIENTO_LISTAR` | `findAll()` |
+| GET | `/{id}` | `SEGUIMIENTO_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `SEGUIMIENTO_CREAR` | `create(@RequestBody StageTracking)` |
+| PUT | `/{id}` | `SEGUIMIENTO_MODIFICAR` | `update(@PathVariable Integer, @RequestBody StageTracking)` |
+| DELETE | `/{id}` | `SEGUIMIENTO_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.25 `StatesController`
+
+**Base:** `/api/v1/states` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `ESTADO_CREAR` | `create(@Valid @RequestBody CStateRequest)` |
+| PUT | `/{id}` | `ESTADO_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UStateRequest)` |
+| DELETE | `/{idstate}` | `ESTADO_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `ESTADO_LISTAR` | `list(@RequestParam(required=false) String category)` |
+
+---
+
+### 9.26 `StudentsController`
+
+**Base:** `/api/v1/students` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/legacy` | `ESTUDIANTE_LISTAR` | `findAllLegacy()` |
+| GET | `/legacy/{id}` | `ESTUDIANTE_VER` | `findByIdLegacy(@PathVariable Integer)` |
+| GET | `/` | `ESTUDIANTE_LISTAR` | `findAll()` |
+| GET | `/{id}` | `ESTUDIANTE_VER` | `findById(@PathVariable Integer)` |
+| GET | `/career/{careerId}` | `ESTUDIANTE_LISTAR` | `findByCareer(@PathVariable Integer)` |
+| GET | `/semester/{s}/parallel/{p}` | `ESTUDIANTE_LISTAR` | `findBySemesterAndParallel(@PathVariable, @PathVariable)` |
+| GET | `/user/{userId}` | `ESTUDIANTE_VER` | `findByUserId(@PathVariable Integer)` |
+| POST | `/` | `ESTUDIANTE_CREAR` | `enrollStudent(@Valid @RequestBody CStudentRequest)` |
+| PUT | `/{id}` | `ESTUDIANTE_MODIFICAR` | `updateStudent(@PathVariable Integer, @Valid @RequestBody UStudentRequest)` |
+| PATCH | `/{id}/status` | `ESTUDIANTE_MODIFICAR` | `changeStatus(@PathVariable Integer, @RequestParam String)` |
+| POST | `/{id}/promote` | `ESTUDIANTE_PROMOVER` | `promoteToNextSemester(@PathVariable Integer)` |
+| POST | `/{id}/graduate` | `ESTUDIANTE_GRADUAR` | `graduate(@PathVariable Integer)` |
+| POST | `/{id}/withdraw` | `ESTUDIANTE_RETIRAR` | `withdraw(@PathVariable Integer)` |
+| POST | `/{id}/reactivate` | `ESTUDIANTE_REACTIVAR` | `reactivate(@PathVariable Integer)` |
+| DELETE | `/{id}` | `ESTUDIANTE_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+### 9.27 `TwoFactorAuthController`
+
+**Base:** `/api/v1/2fa` · **Seguridad:** Mixta (ver sección 4.3)
+
+Ver sección [4.3](#43-twofactorauthcontrollerjava) para detalles completos.
+
+---
+
+### 9.28 `UsersController`
+
+**Base:** `/api/v1/users` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `USUARIO_LISTAR` | `findAll()` |
+| GET | `/{id}` | `USUARIO_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `USUARIO_CREAR` | `create(@Valid @RequestBody CUserRequest)` |
+| PUT | `/{id}` | `USUARIO_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UUserRequest)` |
+| DELETE | `/{id}` | `USUARIO_ELIMINAR` | `delete(@PathVariable Integer)` |
+| PATCH | `/{id}/deactivate` | `USUARIO_DESACTIVAR` | `deactivate(@PathVariable Integer)` |
+| PATCH | `/{id}/activate` | `USUARIO_ACTIVAR` | `activate(@PathVariable Integer)` |
+
+---
+
+### 9.29 `WorkFlowsController`
+
+**Base:** `/api/v1/work-flows` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| POST | `/` | `FLUJO_CREAR` | `create(@Valid @RequestBody CWorkflowRequest)` |
+| PUT | `/{id}` | `FLUJO_MODIFICAR` | `update(@PathVariable Integer, @Valid @RequestBody UWorkflowRequest)` |
+| DELETE | `/{idworkflow}` | `FLUJO_ELIMINAR` | `delete(@PathVariable Integer)` |
+| GET | `/` | `FLUJO_LISTAR` | `list(@RequestParam(required=false) Boolean onlyActive)` |
+
+---
+
+### 9.30 `WorkflowStagesController`
+
+**Base:** `/api/v1/workflow-stages` · **Seguridad:** `isAuthenticated()`
+
+| HTTP | Path | Permiso | Método |
+|---|---|---|---|
+| GET | `/` | `FLUJOETAPA_LISTAR` | `findAll()` |
+| GET | `/{id}` | `FLUJOETAPA_VER` | `findById(@PathVariable Integer)` |
+| POST | `/` | `FLUJOETAPA_CREAR` | `create(@RequestBody WorkflowStages)` |
+| PUT | `/{id}` | `FLUJOETAPA_MODIFICAR` | `update(@PathVariable Integer, @RequestBody WorkflowStages)` |
+| DELETE | `/{id}` | `FLUJOETAPA_ELIMINAR` | `delete(@PathVariable Integer)` |
+
+---
+
+## 10. DTOs (Data Transfer Objects)
+
+Total: **90 DTOs** en `com.app.uteq.Dtos`. Convención de nombres:
+
+| Prefijo | Significado | Uso |
+|---|---|---|
+| `C` | Create | DTO para operaciones de creación (POST) |
+| `U` | Update | DTO para operaciones de actualización (PUT) |
+| `I` | Insert | Alias de Create (usado en AcademicCalendar) |
+| `D` | Delete | DTO para operaciones de eliminación |
+| — (sin prefijo) | Response | DTO de respuesta |
+
+### 10.1 DTOs de Respuesta (Response) — 29
+
+| DTO | Entidad asociada |
+|---|---|
+| `AcademicCalendarResponse` | AcademicCalendar |
+| `ApplicationResponse` | Applications |
+| `ApplicationStageHistoryResponse` | ApplicationStageHistory |
+| `AttachedDocumentResponse` | AttachedDocuments |
+| `CareersResponse` | Careers |
+| `ConfigurationResponse` | Configurations |
+| `CredentialResponse` | Credentials |
+| `DeadlineRuleResponse` | DeadLinerules |
+| `DigitalSignatureResponse` | DigitalSignatures |
+| `DocumentGeneratedResponse` | DocumentsGenerated |
+| `DocumentTemplateResponse` | DocumentTemplates |
+| `FacultyResponse` | Faculties |
+| `NotificationResponse` | Notification |
+| `NotificationTypeResponse` | NotificationType |
+| `PermissionResponse` | Permissions |
+| `ProcedureResponse` | Procedures |
+| `ProcessingStageResponse` | ProcessingStage |
+| `RefreshTokenResponse` | RefreshToken |
+| `RejectionReasonResponse` | RejectionReasons |
+| `RequirementResponse` | RequirementsOfTheProcedure |
+| `RoleResponse` | Roles |
+| `SessionTokenResponse` | SessionToken |
+| `StageTrackingResponse` | StageTracking |
+| `StateResponse` | States |
+| `StudentResponse` | Students |
+| `TwoFactorAuthResponse` | TwoFactorAuth |
+| `TwoFactorSetupResponse` | TwoFactorAuth (setup) |
+| `UserResponse` | Users |
+| `WorkflowResponse` | Workflows |
+| `WorkflowStageResponse` | WorkflowStages |
+
+### 10.2 DTOs de Creación (Create/Insert) — 29
+
+| DTO | Usado en |
+|---|---|
+| `CApplicationRequest` | `POST /api/v1/applications` |
+| `CApplicationStageHistoryRequest` | `POST /api/v1/application-stage-history` |
+| `CAttachedDocumentRequest` | `POST /api/v1/attached-documents` |
+| `CCareersRequest` | `POST /api/v1/careers` |
+| `CConfigurationRequest` | `POST /api/v1/configuration` |
+| `CCredentialRequest` | `POST /api/v1/credentials` |
+| `CDeadlineRuleRequest` | `POST /api/v1/deadlinerules` |
+| `CDigitalSignatureRequest` | `POST /api/v1/digital-signatures` |
+| `CDocumentGeneratedRequest` | `POST /api/v1/documents-generated` |
+| `CDocumentTemplateRequest` | `POST /api/v1/document-templates` |
+| `CFacultyRequest` | `POST /api/v1/faculty` |
+| `CNotificationRequest` | `POST /api/v1/notifications` |
+| `CNotificationTypeRequest` | `POST /api/v1/notification-types` |
+| `CPermissionRequest` | `POST /api/v1/permissions` |
+| `CProcedureRequest` | `POST /api/v1/procedures` |
+| `CProcessingStageRequest` | `POST /api/v1/processing-stages` |
+| `CRefreshTokenRequest` | `POST /api/v1/refresh-tokens` |
+| `CRejectionReasonRequest` | `POST /api/v1/reject-reason` |
+| `CRequirementRequest` | `POST /api/v1/requirements` |
+| `CRoleRequest` | `POST /api/v1/roles` |
+| `CSessionTokenRequest` | `POST /api/v1/session-tokens` |
+| `CStageTrackingRequest` | `POST /api/v1/stage-tracking` |
+| `CStateRequest` | `POST /api/v1/states` |
+| `CStudentRequest` | `POST /api/v1/students` |
+| `CUserRequest` | `POST /api/v1/users` |
+| `CWorkflowRequest` | `POST /api/v1/work-flows` |
+| `CWorkflowStageRequest` | `POST /api/v1/workflow-stages` |
+| `IAcademicCalendarRequest` | `POST /api/v1/academic-calendar` |
+| `DAcademicCalendarRequest` | `DELETE /api/v1/academic-calendar` |
+
+### 10.3 DTOs de Actualización (Update) — 29
+
+| DTO | Usado en |
+|---|---|
+| `UAcademicCalendarRequest` | `PUT /api/v1/academic-calendar/{id}` |
+| `UApplicationRequest` | `PUT /api/v1/applications/{id}` |
+| `UApplicationStageHistoryRequest` | `PUT /api/v1/application-stage-history/{id}` |
+| `UAttachedDocumentRequest` | `PUT /api/v1/attached-documents/{id}` |
+| `UCareersRequest` | `PUT /api/v1/careers/{id}` |
+| `UConfigurationRequest` | `PUT /api/v1/configuration/{id}` |
+| `UCredentialRequest` | `PUT /api/v1/credentials/{id}` |
+| `UDeadlineRuleRequest` | `PUT /api/v1/deadlinerules/{id}` |
+| `UDigitalSignatureRequest` | `PUT /api/v1/digital-signatures/{id}` |
+| `UDocumentGeneratedRequest` | `PUT /api/v1/documents-generated/{id}` |
+| `UDocumentTemplateRequest` | `PUT /api/v1/document-templates/{id}` |
+| `UFacultyRequest` | `PUT /api/v1/faculty/{id}` |
+| `UNotificationRequest` | `PUT /api/v1/notifications/{id}` |
+| `UNotificationTypeRequest` | `PUT /api/v1/notification-types/{id}` |
+| `UPermissionRequest` | `PUT /api/v1/permissions/{id}` |
+| `UProcedureRequest` | `PUT /api/v1/procedures/{id}` |
+| `UProcessingStageRequest` | `PUT /api/v1/processing-stages/{id}` |
+| `URefreshTokenRequest` | `PUT /api/v1/refresh-tokens/{id}` |
+| `URejectionReasonRequest` | `PUT /api/v1/reject-reason/{id}` |
+| `URequirementRequest` | `PUT /api/v1/requirements/{id}` |
+| `URoleRequest` | `PUT /api/v1/roles/{id}` |
+| `USessionTokenRequest` | `PUT /api/v1/session-tokens/{id}` |
+| `UStageTrackingRequest` | `PUT /api/v1/stage-tracking/{id}` |
+| `UStateRequest` | `PUT /api/v1/states/{id}` |
+| `UStudentRequest` | `PUT /api/v1/students/{id}` |
+| `UUserRequest` | `PUT /api/v1/users/{id}` |
+| `UWorkflowRequest` | `PUT /api/v1/work-flows/{id}` |
+| `UWorkflowStageRequest` | `PUT /api/v1/workflow-stages/{id}` |
+
+### 10.4 DTOs Especiales — 3
+
+| DTO | Uso |
+|---|---|
+| `ApiErrorResponse` | Respuesta estándar de error del `GlobalExceptionHandler` |
+| `TwoFactorVerifyRequest` | Envío de código TOTP para verificación 2FA |
+| `TwoFactorBackupRequest` | Envío de código de respaldo para verificación 2FA |
+
+---
+
+## 11. Excepciones y Manejo Global de Errores
+
+### 11.1 Excepciones Personalizadas (5)
+
+| Clase | HTTP Status | Descripción |
+|---|---|---|
+| `BadRequestException` | 400 Bad Request | Solicitud inválida genérica |
+| `BusinessException` | 422 Unprocessable Entity | Error de lógica de negocio (incluye `errorCode`) |
+| `DuplicateResourceException` | 409 Conflict | Recurso duplicado (incluye `resourceName`, `fieldName`, `fieldValue`) |
+| `ResourceNotFoundException` | 404 Not Found | Recurso no encontrado (incluye `resourceName`, `fieldName`, `fieldValue`) |
+| `UnauthorizedException` | 401 Unauthorized | No autorizado |
+
+### 11.2 `GlobalExceptionHandler`
+
+**Ubicación:** `com.app.uteq.Exceptions` · **Anotación:** `@RestControllerAdvice` · **178 líneas, 11 handlers**
+
+Captura todas las excepciones y las transforma en respuestas JSON estandarizadas usando `ApiErrorResponse`.
+
+| Excepción capturada | HTTP | Título del error |
+|---|---|---|
+| `MethodArgumentNotValidException` | 400 | "Error de Validación" (con errores por campo) |
+| `MissingServletRequestParameterException` | 400 | "Parámetro Faltante" |
+| `MethodArgumentTypeMismatchException` | 400 | "Tipo Inválido" |
+| `ResourceNotFoundException` | 404 | "Recurso No Encontrado" |
+| `DuplicateResourceException` | 409 | "Recurso Duplicado" |
+| `BadRequestException` | 400 | "Solicitud Inválida" |
+| `BusinessException` | 422 | "Error de Negocio" (incluye errorCode) |
+| `UnauthorizedException` | 401 | "No Autorizado" |
+| `AccessDeniedException` | 403 | "Acceso Denegado" |
+| `AuthenticationException` / `BadCredentialsException` | 401 | "Error de Autenticación" |
+| `Exception` (fallback) | 500 | "Error Interno" (logueado, mensaje genérico) |
+
+### 11.3 Estructura de `ApiErrorResponse`
+
+```json
+{
+    "status": 400,
+    "error": "Error de Validación",
+    "message": "Campo 'email' no puede estar vacío",
+    "timestamp": "2026-02-16T10:30:00",
+    "path": "/api/v1/users",
+    "fieldErrors": {
+        "email": "no puede estar vacío",
+        "cardId": "debe tener exactamente 10 caracteres"
+    }
+}
+```
+
+---
+
+## 12. Configuración de application.properties
+
+```properties
+# === Aplicación ===
+spring.application.name=Backend
+server.port=8080
+
+# === Base de Datos PostgreSQL ===
+spring.datasource.url=jdbc:postgresql://localhost:5432/SGTE_V1
+spring.datasource.username=postgres
+spring.datasource.password=12345
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# === JPA / Hibernate ===
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# === Logging SQL ===
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.orm.jdbc.bind=TRACE
+logging.level.org.hibernate.type.descriptor.sql=TRACE
+
+# === Claves RSA para JWT ===
+rsa.public-key=classpath:certs/public.pem
+rsa.private-key=classpath:certs/private.pem
+
+# === CORS ===
+cors.allowed-origins=http://localhost:4200
+```
+
+| Propiedad | Valor | Descripción |
+|---|---|---|
+| `server.port` | `8080` | Puerto del servidor |
+| `spring.datasource.url` | `jdbc:postgresql://localhost:5432/SGTE_V1` | URL de la base de datos |
+| `spring.jpa.hibernate.ddl-auto` | `update` | Auto-genera/actualiza esquema DDL |
+| `rsa.public-key` | `classpath:certs/public.pem` | Clave pública RSA para JWT |
+| `rsa.private-key` | `classpath:certs/private.pem` | Clave privada RSA para JWT |
+| `cors.allowed-origins` | `http://localhost:4200` | Frontend Angular permitido |
+
+---
+
+## 13. Dependencias Maven (pom.xml)
+
+| Dependencia | GroupId | Versión | Scope |
+|---|---|---|---|
+| Spring Boot Starter Web | `org.springframework.boot` | 3.2.2 | compile |
+| Spring Boot Starter Data JPA | `org.springframework.boot` | 3.2.2 | compile |
+| Spring Boot Starter Security | `org.springframework.boot` | 3.2.2 | compile |
+| Spring Boot Starter OAuth2 Resource Server | `org.springframework.boot` | 3.2.2 | compile |
+| Spring Boot Starter Validation | `org.springframework.boot` | 3.2.2 | compile |
+| Spring Boot DevTools | `org.springframework.boot` | 3.2.2 | runtime |
+| PostgreSQL JDBC Driver | `org.postgresql` | — | runtime |
+| Lombok | `org.projectlombok` | — | compile, optional |
+| BouncyCastle (bcpkix-jdk18on) | `org.bouncycastle` | 1.83 | compile |
+| Google Authenticator (googleauth) | `com.warrenstrange` | 1.5.0 | compile |
+| Spring Boot Starter Test | `org.springframework.boot` | 3.2.2 | test |
+| Spring Security Test | `org.springframework.security` | — | test |
+
+---
+
+## 14. Diagrama de Relaciones entre Entidades
+
+```
+┌──────────────┐     ┌──────────────┐     ┌─────────────────┐
+│   Faculties  │◄────│   Careers    │     │ AcademicCalendar│
+│  (dean→User) │     │(coord→User)  │     └────────┬────────┘
+└──────────────┘     │(faculty→Fac) │              │
+                     └──────┬───────┘              │
+                            │                      │
+                     ┌──────▼───────┐     ┌────────▼────────┐
+                     │   Students   │     │   Procedures    │
+                     │ (user→Users) │     │ (workflow→WF)   │
+                     │(career→Car)  │     │ (calendar→AC)   │
+                     └──────────────┘     │ (deadline→DLR)  │
+                                          └────────┬────────┘
                                                    │
-                        ┌──────────────────────────┼──────────────────────┐
-                        │                          │                      │
-                        ▼                          ▼                      ▼
-                ┌───────────────┐         ┌───────────────┐     ┌─────────────────┐
-                │Configurations │         │  Credentials  │     │     Roles       │
-                │ (config user) │         │ (contraseñas) │     │   (roles)       │
-                └───────────────┘         └───────┬───────┘     └────────┬────────┘
-                                                  │ 1                    │
-                                                  │                      │ * ◄──► *
-                                                  ▼ 1                    ▼
-                                         ┌────────────────┐     ┌─────────────────┐
-                                         │ TwoFactorAuth  │     │  Permissions    │
-                                         │    (2FA)       │     │  (permisos)     │
-                                         └────────────────┘     └─────────────────┘
+┌──────────────┐                          ┌────────▼────────┐
+│Configurations│◄─────┐                   │  Applications   │
+└──────────────┘      │                   │ (procedure→Proc)│
+                      │                   │ (user→Users)    │
+┌──────────────┐  ┌───▼──────┐            │(stageTrack→ST) │
+│  Credentials │◄─│  Users   │◄───────────│(rejectReason→RR)│
+└──────┬───────┘  │(config)  │            └───┬──────┬──────┘
+       │          │(creds)   │                │      │
+       │          │(roles M:M)│               │      │
+       │          └───┬──────┘                │      │
+       │              │                       │      │
+┌──────▼───────┐  ┌───▼──────┐     ┌─────────▼──┐ ┌─▼──────────────┐
+│TwoFactorAuth │  │  Roles   │     │ Attached   │ │ Documents      │
+│(creds 1:1)   │  │(perms M:M)│    │ Documents  │ │ Generated      │
+└──────────────┘  └───┬──────┘     │(app→App)   │ │(app→App)       │
+                      │            │(req→ReqProc)│ │(template→DocT) │
+                  ┌───▼──────┐     │(user→Users)│ │(user→Users)    │
+                  │Permissions│    └────────────┘ │(digSign→DS)    │
+                  └──────────┘                    └────────────────┘
 
-        ┌──────────────┐      ┌──────────────┐       ┌──────────────────┐
-        │  Workflows   │◄─────│  Procedures  │◄──────│  Applications    │
-        │(flujos trab) │  1  *│  (trámites)  │  1   *│  (solicitudes)   │
-        └──────┬───────┘      └──────┬───────┘       └──────┬───────────┘
-               │ 1                   │ 1                    │
-               │                     │                      ├────► applicantUser: Users
-               ▼ *                   ▼ *                    ├────► currentStageTracking: StageTracking
-        ┌──────────────┐     ┌────────────────────┐         ├────► rejectionReason: RejectionReasons
-        │WorkflowStages│     │RequirementsOfThe   │         │
-        │(etapa-flujo) │     │Procedure (requis.) │         │
-        └──────┬───────┘     └────────────────────┘         ▼ *
-               │                                    ┌────────────────────┐
-               ▼                                    │ApplicationStage    │
-        ┌──────────────┐                            │History (historial) │
-        │ProcessingStage│                           └────────────────────┘
-        │  (etapas)    │
-        └──────┬───────┘
-               │ 1
-               ▼ *
-        ┌──────────────┐       ┌──────────────┐
-        │StageTracking │──────►│    States    │
-        │(seguimiento) │       │  (estados)   │
-        └──────────────┘       └──────────────┘
+┌──────────────┐     ┌──────────────┐     ┌─────────────────┐
+│   Workflows  │◄────│WorkflowStages│────►│ ProcessingStage │
+└──────────────┘     │(workflow→WF) │     └────────┬────────┘
+                     │(stage→PS)    │              │
+                     └──────────────┘     ┌────────▼────────┐
+                                          │  StageTracking  │
+┌──────────────┐                          │ (state→States)  │
+│    States    │◄─────────────────────────│ (stage→PS)      │
+└──────────────┘                          │ (user→Users)    │
+                                          └────────┬────────┘
+                                                   │
+                                          ┌────────▼──────────────┐
+                                          │ApplicationStageHistory│
+                                          │ (app→Applications)    │
+                                          │ (stageTrack→ST)       │
+                                          │ (user→Users)          │
+                                          └───────────────────────┘
 
-        ┌──────────────┐       ┌──────────────────┐
-        │  Notification │──────►│NotificationType  │
-        │(notificación)│       │(tipo notificac.) │
-        └──────────────┘       └──────────────────┘
-
-        ┌──────────────────┐       ┌──────────────────┐
-        │DocumentsGenerated│──────►│DocumentTemplates │
-        │(docs generados)  │       │  (plantillas)    │
-        └──────────┬───────┘       └──────────────────┘
-                   │
-                   ▼
-        ┌──────────────────┐       ┌──────────────────┐
-        │DigitalSignatures │       │AttachedDocuments │
-        │(firmas digitales)│       │(docs adjuntos)   │
-        └──────────────────┘       └──────────────────┘
-
-        ┌──────────────┐       ┌──────────────┐       ┌──────────────┐
-        │ RefreshToken  │       │ SessionToken │       │AcademicCalendar│
-        │(token refresh)│       │(token sesión)│       │(cal. académico)│
-        └──────────────┘       └──────────────┘       └──────────────┘
-
-        ┌──────────────┐       ┌──────────────┐
-        │DeadLinerules │       │RejectionReasons│
-        │(reglas plazo)│       │(razones rechazo)│
-        └──────────────┘       └──────────────┘
+┌──────────────┐     ┌──────────────┐     ┌─────────────────┐
+│ Notification │────►│Notification  │     │ RejectionReasons│
+│(type→NotType)│     │   Type       │     └─────────────────┘
+│(app→App)     │     └──────────────┘
+│(user→Users)  │                          ┌─────────────────┐
+└──────────────┘     ┌──────────────┐     │  DeadLinerules  │
+                     │ SessionToken │     └─────────────────┘
+                     │ (user→Users) │
+                     └──────────────┘     ┌─────────────────┐
+                                          │DocumentTemplates│
+┌──────────────┐     ┌──────────────┐     └─────────────────┘
+│ RefreshToken │     │   Digital    │
+│ (user→Users) │     │ Signatures  │     ┌─────────────────┐
+└──────────────┘     │ (user→Users) │    │ Requirements    │
+                     └──────────────┘     │  OfProcedure    │
+                                          │(procedure→Proc)│
+                                          └─────────────────┘
 ```
 
-### Tablas de Unión
-
-| Tabla | Entidad A | Entidad B | Columna A | Columna B |
-|---|---|---|---|---|
-| `user_roles` | Users | Roles | `iduser` | `idrole` |
-| `role_permissions` | Roles | Permissions | `idrole` | `idpermission` |
+**Tablas intermedias (M:M):**
+- `user_roles` → Users ↔ Roles
+- `role_permissions` → Roles ↔ Permissions
 
 ---
 
-> **Generado automáticamente** para el proyecto SGTE Backend  
-> Total de clases documentadas: **29 entidades** · **29 repositorios** · **29 interfaces de servicio** · **30 implementaciones de servicio** · **30 controladores** · **91 DTOs** · **4 clases de configuración** · **6 clases de excepción** · **2 archivos raíz** = **250 clases/interfaces**
+## 15. Catálogo de Permisos
+
+### 15.1 Permisos por Módulo
+
+| Módulo | Prefijo | Permisos |
+|---|---|---|
+| Calendario Académico | `CAL_` | `CAL_CREAR`, `CAL_MODIFICAR`, `CAL_ELIMINAR`, `CAL_LISTAR` |
+| Solicitudes | `SOL_` | `SOL_CREAR`, `SOL_MODIFICAR`, `SOL_ELIMINAR`, `SOL_LISTAR`, `SOL_VER`, `SOL_RESOLVER`, `SOL_RECHAZAR` |
+| Historial de Etapas | `HIST_` | `HIST_CREAR`, `HIST_MODIFICAR`, `HIST_ELIMINAR`, `HIST_LISTAR`, `HIST_VER` |
+| Documentos Adjuntos | `DOCADJ_` | `DOCADJ_CREAR`, `DOCADJ_MODIFICAR`, `DOCADJ_ELIMINAR`, `DOCADJ_LISTAR`, `DOCADJ_VER` |
+| Carreras | `CARRERA_` | `CARRERA_CREAR`, `CARRERA_MODIFICAR`, `CARRERA_ELIMINAR`, `CARRERA_LISTAR` |
+| Configuración | `CONFIG_` | `CONFIG_CREAR`, `CONFIG_MODIFICAR`, `CONFIG_ELIMINAR`, `CONFIG_LISTAR` |
+| Credenciales | `CRED_` | `CRED_CREAR`, `CRED_ELIMINAR`, `CRED_LISTAR`, `CRED_VER`, `CRED_CAMBIAR_PASS`, `CRED_RESETEAR_PASS`, `CRED_BLOQUEAR`, `CRED_DESBLOQUEAR` |
+| Reglas de Plazo | `REGLA_` | `REGLA_CREAR`, `REGLA_MODIFICAR`, `REGLA_ELIMINAR`, `REGLA_LISTAR` |
+| Firmas Digitales | `FIRMA_` | `FIRMA_CREAR`, `FIRMA_MODIFICAR`, `FIRMA_ELIMINAR`, `FIRMA_LISTAR`, `FIRMA_VER` |
+| Documentos Generados | `DOCGEN_` | `DOCGEN_CREAR`, `DOCGEN_MODIFICAR`, `DOCGEN_ELIMINAR`, `DOCGEN_LISTAR`, `DOCGEN_VER` |
+| Plantillas | `PLANTILLA_` | `PLANTILLA_CREAR`, `PLANTILLA_MODIFICAR`, `PLANTILLA_ELIMINAR`, `PLANTILLA_LISTAR` |
+| Facultades | `FACULTAD_` | `FACULTAD_CREAR`, `FACULTAD_MODIFICAR`, `FACULTAD_ELIMINAR`, `FACULTAD_LISTAR` |
+| Notificaciones | `NOTIF_` | `NOTIF_CREAR`, `NOTIF_MODIFICAR`, `NOTIF_ELIMINAR`, `NOTIF_LISTAR`, `NOTIF_VER` |
+| Tipos de Notificación | `TIPNOTIF_` | `TIPNOTIF_CREAR`, `TIPNOTIF_MODIFICAR`, `TIPNOTIF_ELIMINAR`, `TIPNOTIF_LISTAR`, `TIPNOTIF_VER` |
+| Permisos | `PERMISO_` | `PERMISO_CREAR`, `PERMISO_MODIFICAR`, `PERMISO_ELIMINAR`, `PERMISO_LISTAR` |
+| Trámites | `TRAMITE_` | `TRAMITE_CREAR`, `TRAMITE_MODIFICAR`, `TRAMITE_ELIMINAR`, `TRAMITE_LISTAR`, `TRAMITE_VER`, `TRAMITE_ACTIVAR`, `TRAMITE_DESACTIVAR` |
+| Etapas de Procesamiento | `ETAPA_` | `ETAPA_CREAR`, `ETAPA_MODIFICAR`, `ETAPA_ELIMINAR`, `ETAPA_LISTAR` |
+| Refresh Tokens | `TOKEN_` | `TOKEN_CREAR`, `TOKEN_MODIFICAR`, `TOKEN_ELIMINAR`, `TOKEN_LISTAR`, `TOKEN_VER` |
+| Motivos de Rechazo | `RECHAZO_` | `RECHAZO_CREAR`, `RECHAZO_MODIFICAR`, `RECHAZO_ELIMINAR`, `RECHAZO_LISTAR` |
+| Requisitos | `REQUISITO_` | `REQUISITO_CREAR`, `REQUISITO_MODIFICAR`, `REQUISITO_ELIMINAR`, `REQUISITO_LISTAR`, `REQUISITO_VER` |
+| Roles | `ROL_` | `ROL_CREAR`, `ROL_MODIFICAR`, `ROL_ELIMINAR`, `ROL_LISTAR`, `ROL_VER`, `ROL_ASIGNAR_PERMISO`, `ROL_REMOVER_PERMISO`, `ROL_ASIGNAR_USUARIO`, `ROL_REMOVER_USUARIO` |
+| Sesiones | `SESION_` | `SESION_CREAR`, `SESION_MODIFICAR`, `SESION_ELIMINAR`, `SESION_LISTAR`, `SESION_VER` |
+| Seguimiento | `SEGUIMIENTO_` | `SEGUIMIENTO_CREAR`, `SEGUIMIENTO_MODIFICAR`, `SEGUIMIENTO_ELIMINAR`, `SEGUIMIENTO_LISTAR`, `SEGUIMIENTO_VER` |
+| Estados | `ESTADO_` | `ESTADO_CREAR`, `ESTADO_MODIFICAR`, `ESTADO_ELIMINAR`, `ESTADO_LISTAR` |
+| Estudiantes | `ESTUDIANTE_` | `ESTUDIANTE_CREAR`, `ESTUDIANTE_MODIFICAR`, `ESTUDIANTE_ELIMINAR`, `ESTUDIANTE_LISTAR`, `ESTUDIANTE_VER`, `ESTUDIANTE_PROMOVER`, `ESTUDIANTE_GRADUAR`, `ESTUDIANTE_RETIRAR`, `ESTUDIANTE_REACTIVAR` |
+| Auth 2FA | `AUTH2FA_` | `AUTH2FA_CONFIGURAR`, `AUTH2FA_VERIFICAR`, `AUTH2FA_DESACTIVAR`, `AUTH2FA_ESTADO`, `AUTH2FA_REGENERAR` |
+| Usuarios | `USUARIO_` | `USUARIO_CREAR`, `USUARIO_MODIFICAR`, `USUARIO_ELIMINAR`, `USUARIO_LISTAR`, `USUARIO_VER`, `USUARIO_DESACTIVAR`, `USUARIO_ACTIVAR` |
+| Flujos de Trabajo | `FLUJO_` | `FLUJO_CREAR`, `FLUJO_MODIFICAR`, `FLUJO_ELIMINAR`, `FLUJO_LISTAR` |
+| Etapas de Flujo | `FLUJOETAPA_` | `FLUJOETAPA_CREAR`, `FLUJOETAPA_MODIFICAR`, `FLUJOETAPA_ELIMINAR`, `FLUJOETAPA_LISTAR`, `FLUJOETAPA_VER` |
+
+---
+
+## 16. Resumen Estadístico del Proyecto
+
+| Categoría | Cantidad |
+|---|---|
+| **Entidades JPA** | 29 |
+| **Repositorios** | 29 (11 SP + 18 JPA) |
+| **Interfaces de Servicio** | 29 |
+| **Implementaciones de Servicio** | 30 (29 ServiceImpl + CustomUserDetailsService) |
+| **Controladores** | 30 |
+| **DTOs** | 90 (29 Response + 29 Create + 29 Update + 3 especiales) |
+| **Excepciones personalizadas** | 5 |
+| **Clases de Configuración** | 4 (SecurityConfig, RsaKeyConfig, SpResultConverter, StringListConverter) |
+| **Endpoints REST totales** | ~168 |
+| **Códigos de permiso** | ~140 |
+| **Procedimientos almacenados** | 44 (11 × 4: spi, spu, spd, fn_list) + 1 (spu_revoke_all_refresh_tokens) |
+| **Tablas intermedias** | 2 (user_roles, role_permissions) |
+| **Archivos fuente Java** | ~249 |
+| **Roles del sistema** | 4 (ADMIN, STUDENT, COORDINATOR, DEAN) |
+
+### Estructura de Paquetes
+
+```
+com.app.uteq/
+├── BackendApplication.java          (1 archivo)
+├── GenerateKeyPair.java             (1 archivo)
+├── Config/                          (4 archivos)
+│   ├── RsaKeyConfig.java
+│   ├── SecurityConfig.java
+│   ├── SpResultConverter.java
+│   └── StringListConverter.java
+├── Controllers/                     (30 archivos)
+├── Dtos/                            (90 archivos)
+├── Entity/                          (29 archivos)
+├── Exceptions/                      (6 archivos: 5 excepciones + GlobalExceptionHandler)
+├── Repository/                      (29 archivos)
+└── Services/                        (29 interfaces)
+    └── Impl/                        (30 implementaciones)
+```
+
+---
+
+> **Fin del Manual Técnico — SGTE Backend v1.0**
