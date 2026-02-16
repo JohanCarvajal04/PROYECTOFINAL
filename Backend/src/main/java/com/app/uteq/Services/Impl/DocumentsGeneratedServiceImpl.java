@@ -1,26 +1,32 @@
 package com.app.uteq.Services.Impl;
 
-import com.app.uteq.Entity.DocumentsGenerated;
-import com.app.uteq.Repository.IDocumentsGeneratedRepository;
-import com.app.uteq.Services.IDocumentsGeneratedService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.app.uteq.Entity.DocumentsGenerated;
+import com.app.uteq.Repository.IDocumentsGeneratedRepository;
+import com.app.uteq.Services.IDocumentsGeneratedService;
+
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class DocumentsGeneratedServiceImpl implements IDocumentsGeneratedService {
 
-    @Autowired
-    private IDocumentsGeneratedRepository documentsGeneratedRepository;
+    private final IDocumentsGeneratedRepository documentsGeneratedRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<DocumentsGenerated> findAll() {
         return documentsGeneratedRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<DocumentsGenerated> findById(Integer id) {
         return documentsGeneratedRepository.findById(id);
     }

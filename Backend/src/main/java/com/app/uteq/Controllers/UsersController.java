@@ -26,44 +26,51 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
-@PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
+@PreAuthorize("isAuthenticated()")
 public class UsersController {
     private final IUsersService service;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('USUARIO_LISTAR')")
     public ResponseEntity<List<UserResponse>> findAll() {
         return ResponseEntity.ok(service.findAllUsers());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('USUARIO_VER')")
     public ResponseEntity<UserResponse> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findUserById(id));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('USUARIO_CREAR')")
     public ResponseEntity<UserResponse> create(@Valid @RequestBody CUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.createUser(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('USUARIO_MODIFICAR')")
     public ResponseEntity<UserResponse> update(@PathVariable Integer id, 
                                                @Valid @RequestBody UUserRequest request) {
         return ResponseEntity.ok(service.updateUser(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('USUARIO_ELIMINAR')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasAuthority('USUARIO_DESACTIVAR')")
     public ResponseEntity<UserResponse> deactivate(@PathVariable Integer id) {
         return ResponseEntity.ok(service.deactivateUser(id));
     }
 
     @PatchMapping("/{id}/activate")
+    @PreAuthorize("hasAuthority('USUARIO_ACTIVAR')")
     public ResponseEntity<UserResponse> activate(@PathVariable Integer id) {
         return ResponseEntity.ok(service.activateUser(id));
     }

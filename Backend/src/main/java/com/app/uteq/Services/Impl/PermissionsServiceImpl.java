@@ -1,17 +1,21 @@
 package com.app.uteq.Services.Impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CPermissionRequest;
 import com.app.uteq.Dtos.PermissionResponse;
 import com.app.uteq.Dtos.UPermissionRequest;
 import com.app.uteq.Repository.IPermissionsRepository;
 import com.app.uteq.Services.IPermissionsService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PermissionsServiceImpl implements IPermissionsService {
     private final IPermissionsRepository repository;
 
@@ -38,6 +42,7 @@ public class PermissionsServiceImpl implements IPermissionsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<PermissionResponse> listPermission() {
         List<Object[]> rows = repository.fnListPermissions();
 

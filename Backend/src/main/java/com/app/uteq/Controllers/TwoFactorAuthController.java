@@ -39,7 +39,7 @@ public class TwoFactorAuthController {
      * Se muestra UNA SOLA VEZ al usuario.
      */
     @PostMapping("/setup")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('AUTH2FA_CONFIGURAR')")
     public ResponseEntity<TwoFactorSetupResponse> setup(Authentication authentication) {
         String email = authentication.getName();
         TwoFactorSetupResponse response = twoFactorAuthService.setup2FA(email);
@@ -50,7 +50,7 @@ public class TwoFactorAuthController {
      * Primera verificación del código TOTP → activa 2FA.
      */
     @PostMapping("/verify")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('AUTH2FA_VERIFICAR')")
     public ResponseEntity<Map<String, Object>> verify(
             Authentication authentication,
             @Valid @RequestBody TwoFactorVerifyRequest request) {
@@ -66,7 +66,7 @@ public class TwoFactorAuthController {
      * Desactiva 2FA (requiere código TOTP válido).
      */
     @DeleteMapping("/disable")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('AUTH2FA_DESACTIVAR')")
     public ResponseEntity<Map<String, Object>> disable(
             Authentication authentication,
             @Valid @RequestBody TwoFactorVerifyRequest request) {
@@ -82,7 +82,7 @@ public class TwoFactorAuthController {
      * Consulta el estado de 2FA del usuario autenticado.
      */
     @GetMapping("/status")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('AUTH2FA_ESTADO')")
     public ResponseEntity<TwoFactorAuthResponse> status(Authentication authentication) {
         String email = authentication.getName();
         TwoFactorAuthResponse response = twoFactorAuthService.getStatus(email);
@@ -93,7 +93,7 @@ public class TwoFactorAuthController {
      * Regenera códigos de respaldo (requiere código TOTP válido).
      */
     @PostMapping("/backup-codes/regenerate")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasAuthority('AUTH2FA_REGENERAR')")
     public ResponseEntity<Map<String, Object>> regenerateBackupCodes(
             Authentication authentication,
             @Valid @RequestBody TwoFactorVerifyRequest request) {

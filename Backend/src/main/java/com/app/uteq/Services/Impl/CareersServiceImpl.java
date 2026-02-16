@@ -1,17 +1,21 @@
 package com.app.uteq.Services.Impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CCareersRequest;
 import com.app.uteq.Dtos.CareersResponse;
 import com.app.uteq.Dtos.UCareersRequest;
 import com.app.uteq.Repository.ICareersRepository;
 import com.app.uteq.Services.ICareersService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class CareersServiceImpl implements ICareersService {
     private final ICareersRepository repository;
 
@@ -42,6 +46,7 @@ public class CareersServiceImpl implements ICareersService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<CareersResponse> listCareers(Integer facultyid) {
         List<Object[]> rows = repository.fnListCareers(facultyid);
 

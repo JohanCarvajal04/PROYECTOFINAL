@@ -79,4 +79,15 @@ public interface ICredentialsService {
      * @throws UnauthorizedException si no es el dueño ni un ADMIN
      */
     void verifyCredentialOwnership(Integer credentialId, String authenticatedEmail);
+
+    /**
+     * Registra un intento fallido de login por email institucional.
+     * @return true si la cuenta fue bloqueada
+     */
+    boolean registerFailedAttemptByEmail(String email);
+
+    /**
+     * Registra un login exitoso por email institucional.
+     */
+    void registerSuccessfulLoginByEmail(String email);
 }

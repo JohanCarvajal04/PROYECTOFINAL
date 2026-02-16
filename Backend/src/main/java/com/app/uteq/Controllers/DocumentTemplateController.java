@@ -28,6 +28,7 @@ public class DocumentTemplateController {
 
     // CREATE -> spi_documenttemplate
     @PostMapping
+    @PreAuthorize("hasAuthority('PLANTILLA_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CDocumentTemplateRequest request) {
         service.createDocumenttemplate(request);
         return ResponseEntity.ok("Template creado correctamente");
@@ -35,6 +36,7 @@ public class DocumentTemplateController {
 
     // UPDATE -> spu_documenttemplate
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PLANTILLA_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody UDocumentTemplateRequest request) {
@@ -45,6 +47,7 @@ public class DocumentTemplateController {
 
     // DELETE lógico -> spd_documenttemplate
     @DeleteMapping("/{idtemplate}")
+    @PreAuthorize("hasAuthority('PLANTILLA_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idtemplate) {
         service.deleteDocumenttemplate(idtemplate);
         return ResponseEntity.ok("Template eliminado correctamente");
@@ -52,6 +55,7 @@ public class DocumentTemplateController {
 
     // LIST -> fn_list_documenttemplates
     @GetMapping
+    @PreAuthorize("hasAuthority('PLANTILLA_LISTAR')")
     public ResponseEntity<?> list(@RequestParam(required = false) Boolean onlyActive) {
         return ResponseEntity.ok(service.listDocumenttemplate(onlyActive));
     }

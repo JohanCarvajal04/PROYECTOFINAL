@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.app.uteq.Dtos.CDocumentTemplateRequest;
 import com.app.uteq.Dtos.DocumentTemplateResponse;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class DocumentTemplatesServiceImpl implements IDocumentTemplatesService {
     private final IDocumentTemplatesRepository repository;
 
@@ -50,6 +52,7 @@ public class DocumentTemplatesServiceImpl implements IDocumentTemplatesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<DocumentTemplateResponse> listDocumenttemplate(Boolean onlyActive) {
         List<Object[]> rows = repository.fnListDocumentTemplates(onlyActive);
 

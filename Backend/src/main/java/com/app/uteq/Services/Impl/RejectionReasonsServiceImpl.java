@@ -1,17 +1,21 @@
 package com.app.uteq.Services.Impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CRejectionReasonRequest;
 import com.app.uteq.Dtos.RejectionReasonResponse;
 import com.app.uteq.Dtos.URejectionReasonRequest;
 import com.app.uteq.Repository.IRejectionReasonsRepository;
 import com.app.uteq.Services.IRejectionReasonsService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class RejectionReasonsServiceImpl implements IRejectionReasonsService {
 
     private final IRejectionReasonsRepository repository;
@@ -43,6 +47,7 @@ public class RejectionReasonsServiceImpl implements IRejectionReasonsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<RejectionReasonResponse> listRejectreason(Boolean onlyActive) {
         List<Object[]> rows = repository.fnListRejectionReasons(onlyActive);
 

@@ -21,17 +21,19 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/configuration")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
+@PreAuthorize("isAuthenticated()")
 public class ConfigurationController {
     private final IConfigurationService service;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CONFIG_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CConfigurationRequest request) {
         service.createConfiguration(request);
         return ResponseEntity.ok("Configuración creada correctamente");
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('CONFIG_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody UConfigurationRequest request) {
@@ -41,12 +43,14 @@ public class ConfigurationController {
     }
 
     @DeleteMapping("/{idconfiguration}")
+    @PreAuthorize("hasAuthority('CONFIG_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idconfiguration) {
         service.deleteConfiguration(idconfiguration);
         return ResponseEntity.ok("Configuración eliminada correctamente");
     }
 
     @GetMapping("")
+    @PreAuthorize("hasAuthority('CONFIG_LISTAR')")
     public ResponseEntity<?> list() {
         return ResponseEntity.ok(service.listConfiguration());
     }

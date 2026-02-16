@@ -41,19 +41,19 @@ public class CredentialsController {
     // ═════════════════════════════════════════════════════════════
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CRED_LISTAR')")
     public ResponseEntity<List<CredentialResponse>> findAll() {
         return ResponseEntity.ok(service.findAllCredentials());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CRED_VER')")
     public ResponseEntity<CredentialResponse> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findCredentialById(id));
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CRED_CREAR')")
     public ResponseEntity<CredentialResponse> create(@Valid @RequestBody CCredentialRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.createCredential(request));
@@ -64,6 +64,7 @@ public class CredentialsController {
     // ═════════════════════════════════════════════════════════════
 
     @PostMapping("/{id}/change-password")
+    @PreAuthorize("hasAuthority('CRED_CAMBIAR_PASS')")
     public ResponseEntity<CredentialResponse> changePassword(
             @PathVariable Integer id,
             @RequestBody Map<String, String> passwordRequest,
@@ -76,7 +77,7 @@ public class CredentialsController {
     }
 
     @PostMapping("/{id}/reset-password")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CRED_RESETEAR_PASS')")
     public ResponseEntity<Map<String, String>> resetPassword(@PathVariable Integer id) {
         String tempPassword = service.resetPassword(id);
         return ResponseEntity.ok(Map.of(
@@ -96,19 +97,19 @@ public class CredentialsController {
     // ═════════════════════════════════════════════════════════════
 
     @PostMapping("/{id}/lock")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CRED_BLOQUEAR')")
     public ResponseEntity<CredentialResponse> lockAccount(@PathVariable Integer id) {
         return ResponseEntity.ok(service.lockAccount(id));
     }
 
     @PostMapping("/{id}/unlock")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CRED_DESBLOQUEAR')")
     public ResponseEntity<CredentialResponse> unlockAccount(@PathVariable Integer id) {
         return ResponseEntity.ok(service.unlockAccount(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('CRED_ELIMINAR')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.deleteById(id);
         return ResponseEntity.noContent().build();

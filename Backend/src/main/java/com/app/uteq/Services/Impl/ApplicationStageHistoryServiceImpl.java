@@ -1,26 +1,32 @@
 package com.app.uteq.Services.Impl;
 
-import com.app.uteq.Entity.ApplicationStageHistory;
-import com.app.uteq.Repository.IApplicationStageHistoryRepository;
-import com.app.uteq.Services.IApplicationStageHistoryService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.app.uteq.Entity.ApplicationStageHistory;
+import com.app.uteq.Repository.IApplicationStageHistoryRepository;
+import com.app.uteq.Services.IApplicationStageHistoryService;
+
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class ApplicationStageHistoryServiceImpl implements IApplicationStageHistoryService {
 
-    @Autowired
-    private IApplicationStageHistoryRepository applicationStageHistoryRepository;
+    private final IApplicationStageHistoryRepository applicationStageHistoryRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public List<ApplicationStageHistory> findAll() {
         return applicationStageHistoryRepository.findAll();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ApplicationStageHistory> findById(Integer id) {
         return applicationStageHistoryRepository.findById(id);
     }

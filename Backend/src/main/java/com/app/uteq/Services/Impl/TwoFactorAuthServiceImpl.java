@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TwoFactorAuthServiceImpl implements ITwoFactorAuthService {
 
     private final ITwoFactorAuthRepository twoFactorAuthRepository;

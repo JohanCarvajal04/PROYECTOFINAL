@@ -32,50 +32,59 @@ public class ApplicationsController {
     private final IApplicationsService service;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('SOL_LISTAR')")
     public ResponseEntity<List<ApplicationResponse>> findAll() {
         return ResponseEntity.ok(service.findAllApplications());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('SOL_VER')")
     public ResponseEntity<ApplicationResponse> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findApplicationById(id));
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAuthority('SOL_VER')")
     public ResponseEntity<List<ApplicationResponse>> findByUserId(@PathVariable Integer userId) {
         return ResponseEntity.ok(service.findByApplicantUserId(userId));
     }
 
     @GetMapping("/priority/{priority}")
+    @PreAuthorize("hasAuthority('SOL_LISTAR')")
     public ResponseEntity<List<ApplicationResponse>> findByPriority(@PathVariable String priority) {
         return ResponseEntity.ok(service.findByPriority(priority));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('SOL_CREAR')")
     public ResponseEntity<ApplicationResponse> create(@Valid @RequestBody CApplicationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.createApplication(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('SOL_MODIFICAR')")
     public ResponseEntity<ApplicationResponse> update(@PathVariable Integer id, 
                                                       @Valid @RequestBody UApplicationRequest request) {
         return ResponseEntity.ok(service.updateApplication(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('SOL_ELIMINAR')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.deleteApplication(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/resolve")
+    @PreAuthorize("hasAuthority('SOL_RESOLVER')")
     public ResponseEntity<ApplicationResponse> resolve(@PathVariable Integer id,
                                                        @RequestParam String resolution) {
         return ResponseEntity.ok(service.resolveApplication(id, resolution));
     }
 
     @PatchMapping("/{id}/reject")
+    @PreAuthorize("hasAuthority('SOL_RECHAZAR')")
     public ResponseEntity<ApplicationResponse> reject(@PathVariable Integer id,
                                                       @RequestParam Integer rejectionReasonId) {
         return ResponseEntity.ok(service.rejectApplication(id, rejectionReasonId));

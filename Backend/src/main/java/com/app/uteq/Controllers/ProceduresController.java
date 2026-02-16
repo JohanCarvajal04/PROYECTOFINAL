@@ -37,11 +37,13 @@ public class ProceduresController {
     // ═════════════════════════════════════════════════════════════
 
     @GetMapping("/legacy")
+    @PreAuthorize("hasAuthority('TRAMITE_LISTAR')")
     public ResponseEntity<List<Procedures>> findAllLegacy() {
         return ResponseEntity.ok(service.findAll());
     }
 
     @GetMapping("/legacy/{id}")
+    @PreAuthorize("hasAuthority('TRAMITE_VER')")
     public ResponseEntity<Procedures> findByIdLegacy(@PathVariable Integer id) {
         return service.findById(id)
                 .map(ResponseEntity::ok)
@@ -53,22 +55,25 @@ public class ProceduresController {
     // ═════════════════════════════════════════════════════════════
 
     @GetMapping
+    @PreAuthorize("hasAuthority('TRAMITE_LISTAR')")
     public ResponseEntity<List<ProcedureResponse>> findAll() {
         return ResponseEntity.ok(service.findAllProcedures());
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('TRAMITE_LISTAR')")
     public ResponseEntity<List<ProcedureResponse>> findAllIncludingInactive() {
         return ResponseEntity.ok(service.findAllIncludingInactive());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('TRAMITE_VER')")
     public ResponseEntity<ProcedureResponse> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findProcedureById(id));
     }
 
     @GetMapping("/code/{code}")
+    @PreAuthorize("hasAuthority('TRAMITE_VER')")
     public ResponseEntity<ProcedureResponse> findByCode(@PathVariable String code) {
         return service.findByProcedureCode(code)
                 .map(ResponseEntity::ok)
@@ -76,19 +81,20 @@ public class ProceduresController {
     }
 
     @GetMapping("/workflow/{workflowId}")
+    @PreAuthorize("hasAuthority('TRAMITE_LISTAR')")
     public ResponseEntity<List<ProcedureResponse>> findByWorkflow(@PathVariable Integer workflowId) {
         return ResponseEntity.ok(service.findByWorkflow(workflowId));
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('TRAMITE_CREAR')")
     public ResponseEntity<ProcedureResponse> create(@Valid @RequestBody CProcedureRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.createProcedure(request));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('TRAMITE_MODIFICAR')")
     public ResponseEntity<ProcedureResponse> update(
             @PathVariable Integer id,
             @Valid @RequestBody UProcedureRequest request) {
@@ -96,25 +102,26 @@ public class ProceduresController {
     }
 
     @PostMapping("/{id}/activate")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('TRAMITE_ACTIVAR')")
     public ResponseEntity<ProcedureResponse> activate(@PathVariable Integer id) {
         return ResponseEntity.ok(service.activateProcedure(id));
     }
 
     @PostMapping("/{id}/deactivate")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('TRAMITE_DESACTIVAR')")
     public ResponseEntity<ProcedureResponse> deactivate(@PathVariable Integer id) {
         return ResponseEntity.ok(service.deactivateProcedure(id));
     }
 
     @GetMapping("/{id}/requires-2fa")
+    @PreAuthorize("hasAuthority('TRAMITE_VER')")
     public ResponseEntity<Map<String, Boolean>> requires2FA(@PathVariable Integer id) {
         boolean requires2fa = service.requires2FA(id);
         return ResponseEntity.ok(Map.of("requires2FA", requires2fa));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('TRAMITE_ELIMINAR')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.deleteProcedure(id);
         return ResponseEntity.noContent().build();

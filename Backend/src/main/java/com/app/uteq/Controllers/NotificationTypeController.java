@@ -1,13 +1,22 @@
 package com.app.uteq.Controllers;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.app.uteq.Entity.NotificationType;
 import com.app.uteq.Services.INotificationTypeService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import org.springframework.security.access.prepost.PreAuthorize;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,11 +26,13 @@ public class NotificationTypeController {
     private final INotificationTypeService service;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('TIPNOTIF_LISTAR')")
     public ResponseEntity<List<NotificationType>> findAll() {
         return ResponseEntity.ok(service.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('TIPNOTIF_VER')")
     public ResponseEntity<NotificationType> findById(@PathVariable Integer id) {
         return service.findById(id)
                 .map(ResponseEntity::ok)
@@ -29,17 +40,20 @@ public class NotificationTypeController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('TIPNOTIF_CREAR')")
     public ResponseEntity<NotificationType> create(@RequestBody NotificationType entity) {
         return ResponseEntity.ok(service.save(entity));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('TIPNOTIF_MODIFICAR')")
     public ResponseEntity<NotificationType> update(@PathVariable Integer id, @RequestBody NotificationType entity) {
         entity.setIdNotificationType(id);
         return ResponseEntity.ok(service.save(entity));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('TIPNOTIF_ELIMINAR')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.deleteById(id);
         return ResponseEntity.noContent().build();

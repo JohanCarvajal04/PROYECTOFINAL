@@ -1,17 +1,21 @@
 package com.app.uteq.Services.Impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CConfigurationRequest;
 import com.app.uteq.Dtos.ConfigurationResponse;
 import com.app.uteq.Dtos.UConfigurationRequest;
 import com.app.uteq.Repository.IConfigurationsRepository;
 import com.app.uteq.Services.IConfigurationService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ConfigurationServiceImpl implements IConfigurationService {
     private final IConfigurationsRepository repository;
 
@@ -46,6 +50,7 @@ public class ConfigurationServiceImpl implements IConfigurationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ConfigurationResponse> listConfiguration() {
         List<Object[]> rows = repository.fnListConfigurations();
 

@@ -28,6 +28,7 @@ public class CareerController {
 
     // CREATE
     @PostMapping
+    @PreAuthorize("hasAuthority('CARRERA_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CCareersRequest request) {
         service.createCareers(request);
         return ResponseEntity.ok("Carrera creada correctamente");
@@ -35,6 +36,7 @@ public class CareerController {
 
     // UPDATE (reemplazo total)
     @PutMapping("/{idcareer}")
+    @PreAuthorize("hasAuthority('CARRERA_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer idcareer,
             @Valid @RequestBody UCareersRequest request) {
@@ -46,6 +48,7 @@ public class CareerController {
 
     // DELETE
     @DeleteMapping("/{idcareer}")
+    @PreAuthorize("hasAuthority('CARRERA_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idcareer) {
         service.deleteCareers(idcareer);
         return ResponseEntity.ok("Carrera eliminada correctamente");
@@ -53,6 +56,7 @@ public class CareerController {
 
     // LIST (filtro opcional por facultad)
     @GetMapping
+    @PreAuthorize("hasAuthority('CARRERA_LISTAR')")
     public ResponseEntity<?> list(@RequestParam(required = false) Integer facultyid) {
         return ResponseEntity.ok(service.listCareers(facultyid));
     }

@@ -1,17 +1,21 @@
 package com.app.uteq.Services.Impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CDeadlineRuleRequest;
 import com.app.uteq.Dtos.DeadlineRuleResponse;
 import com.app.uteq.Dtos.UDeadlineRuleRequest;
 import com.app.uteq.Repository.IDeadLineRulesRepository;
 import com.app.uteq.Services.IDeadLineRulesService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class DeadLineRulesServiceImpl implements IDeadLineRulesService {
     private final IDeadLineRulesRepository repository;
 
@@ -44,6 +48,7 @@ public class DeadLineRulesServiceImpl implements IDeadLineRulesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<DeadlineRuleResponse> listDeadlinerule(Boolean onlyActive) {
         List<Object[]> rows = repository.fnListDeadlineRules(onlyActive);
 

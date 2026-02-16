@@ -43,7 +43,7 @@ public class Roles {
     @Column(name = "roledescription", columnDefinition = "TEXT")
     private String roleDescription;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "role_permissions", joinColumns = @JoinColumn(name = "idrole"), inverseJoinColumns = @JoinColumn(name = "idpermission"))
     private Set<Permissions> permissions;
 }

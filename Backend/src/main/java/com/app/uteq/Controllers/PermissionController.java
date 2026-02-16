@@ -21,12 +21,13 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/permissions")
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
+@PreAuthorize("isAuthenticated()")
 public class PermissionController {
     private final IPermissionsService service;
 
     // CREATE -> spi_permission
     @PostMapping
+    @PreAuthorize("hasAuthority('PERMISO_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CPermissionRequest request) {
         service.createPermission(request);
         return ResponseEntity.ok("Permiso creado correctamente");
@@ -34,6 +35,7 @@ public class PermissionController {
 
     // UPDATE -> spu_permission
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PERMISO_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody UPermissionRequest request) {
@@ -44,6 +46,7 @@ public class PermissionController {
 
     // DELETE -> spd_permission (físico)
     @DeleteMapping("/{idpermission}")
+    @PreAuthorize("hasAuthority('PERMISO_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idpermission) {
         service.deletePermission(idpermission);
         return ResponseEntity.ok("Permiso eliminado correctamente");
@@ -51,6 +54,7 @@ public class PermissionController {
 
     // LIST -> fn_list_permissions
     @GetMapping
+    @PreAuthorize("hasAuthority('PERMISO_LISTAR')")
     public ResponseEntity<?> list() {
         return ResponseEntity.ok(service.listPermission());
     }

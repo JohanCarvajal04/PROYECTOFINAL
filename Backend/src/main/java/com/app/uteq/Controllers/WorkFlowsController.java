@@ -28,6 +28,7 @@ public class WorkFlowsController {
 
     // CREATE -> spi_workflow
     @PostMapping
+    @PreAuthorize("hasAuthority('FLUJO_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CWorkflowRequest request) {
         service.createWorkflow(request);
         return ResponseEntity.ok("Workflow creado correctamente");
@@ -35,6 +36,7 @@ public class WorkFlowsController {
 
     // UPDATE -> spu_workflow
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('FLUJO_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody UWorkflowRequest request) {
@@ -45,6 +47,7 @@ public class WorkFlowsController {
 
     // DELETE lógico -> spd_workflow
     @DeleteMapping("/{idworkflow}")
+    @PreAuthorize("hasAuthority('FLUJO_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idworkflow) {
         service.deleteWorkflow(idworkflow);
         return ResponseEntity.ok("Workflow desactivado correctamente (active=false)");
@@ -52,6 +55,7 @@ public class WorkFlowsController {
 
     // LIST -> fn_list_workflows
     @GetMapping
+    @PreAuthorize("hasAuthority('FLUJO_LISTAR')")
     public ResponseEntity<?> list(@RequestParam(required = false) Boolean onlyActive) {
         return ResponseEntity.ok(service.listWorkflow(onlyActive));
     }

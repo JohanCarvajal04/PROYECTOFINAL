@@ -27,6 +27,7 @@ public class FacultyController {
 
     // CREATE -> spi_faculty
     @PostMapping
+    @PreAuthorize("hasAuthority('FACULTAD_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CFacultyRequest request) {
         service.createFaculty(request);
         return ResponseEntity.ok("Facultad creada correctamente");
@@ -34,6 +35,7 @@ public class FacultyController {
 
     // UPDATE -> spu_faculty
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('FACULTAD_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody UFacultyRequest request) {
@@ -44,6 +46,7 @@ public class FacultyController {
 
     // DELETE -> spd_faculty
     @DeleteMapping("/{idfaculty}")
+    @PreAuthorize("hasAuthority('FACULTAD_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idfaculty) {
         service.deleteFaculty(idfaculty);
         return ResponseEntity.ok("Facultad eliminada correctamente");
@@ -51,6 +54,7 @@ public class FacultyController {
 
     // LIST -> fn_list_faculties
     @GetMapping
+    @PreAuthorize("hasAuthority('FACULTAD_LISTAR')")
     public ResponseEntity<?> list() {
         return ResponseEntity.ok(service.listFaculty());
     }

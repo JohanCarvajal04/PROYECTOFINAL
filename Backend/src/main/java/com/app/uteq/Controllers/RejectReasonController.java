@@ -28,6 +28,7 @@ public class RejectReasonController {
 
     // CREATE -> spi_rejectionreason
     @PostMapping
+    @PreAuthorize("hasAuthority('RECHAZO_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CRejectionReasonRequest request) {
         service.createRejectreason(request);
         return ResponseEntity.ok("Razón de rechazo creada correctamente");
@@ -35,6 +36,7 @@ public class RejectReasonController {
 
     // UPDATE -> spu_rejectionreason
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('RECHAZO_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody URejectionReasonRequest request) {
@@ -45,6 +47,7 @@ public class RejectReasonController {
 
     // DELETE lógico -> spd_rejectionreason
     @DeleteMapping("/{idrejectionreason}")
+    @PreAuthorize("hasAuthority('RECHAZO_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idrejectionreason) {
         service.deleteRejectreason(idrejectionreason);
         return ResponseEntity.ok("Razón de rechazo eliminada lógicamente (active=false)");
@@ -52,6 +55,7 @@ public class RejectReasonController {
 
     // LIST -> fn_list_rejectionreasons
     @GetMapping
+    @PreAuthorize("hasAuthority('RECHAZO_LISTAR')")
     public ResponseEntity<?> list(@RequestParam(required = false) Boolean onlyActive) {
         return ResponseEntity.ok(service.listRejectreason(onlyActive));
     }

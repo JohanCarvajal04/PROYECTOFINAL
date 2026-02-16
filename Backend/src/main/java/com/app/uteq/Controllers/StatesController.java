@@ -28,6 +28,7 @@ public class StatesController {
 
     // CREATE
     @PostMapping
+    @PreAuthorize("hasAuthority('ESTADO_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CStateRequest request) {
         service.createStates(request);
         return ResponseEntity.ok("Estado creado correctamente");
@@ -35,6 +36,7 @@ public class StatesController {
 
     // UPDATE
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ESTADO_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody UStateRequest request) {
@@ -45,6 +47,7 @@ public class StatesController {
 
     // DELETE
     @DeleteMapping("/{idstate}")
+    @PreAuthorize("hasAuthority('ESTADO_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idstate) {
         service.deleteStates(idstate);
         return ResponseEntity.ok("Estado eliminado correctamente");
@@ -52,6 +55,7 @@ public class StatesController {
 
     // LIST
     @GetMapping
+    @PreAuthorize("hasAuthority('ESTADO_LISTAR')")
     public ResponseEntity<?> list(@RequestParam(required = false) String category) {
         return ResponseEntity.ok(service.listStates(category));
     }

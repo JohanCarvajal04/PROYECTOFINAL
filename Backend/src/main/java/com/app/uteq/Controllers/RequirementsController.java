@@ -1,13 +1,22 @@
 package com.app.uteq.Controllers;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.app.uteq.Entity.RequirementsOfTheProcedure;
 import com.app.uteq.Services.IRequirementsOfTheProcedureService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import org.springframework.security.access.prepost.PreAuthorize;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,11 +26,13 @@ public class RequirementsController {
     private final IRequirementsOfTheProcedureService service;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('REQUISITO_LISTAR')")
     public ResponseEntity<List<RequirementsOfTheProcedure>> findAll() {
         return ResponseEntity.ok(service.findAll());
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('REQUISITO_VER')")
     public ResponseEntity<RequirementsOfTheProcedure> findById(@PathVariable Integer id) {
         return service.findById(id)
                 .map(ResponseEntity::ok)
@@ -29,11 +40,13 @@ public class RequirementsController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('REQUISITO_CREAR')")
     public ResponseEntity<RequirementsOfTheProcedure> create(@RequestBody RequirementsOfTheProcedure entity) {
         return ResponseEntity.ok(service.save(entity));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('REQUISITO_MODIFICAR')")
     public ResponseEntity<RequirementsOfTheProcedure> update(@PathVariable Integer id,
             @RequestBody RequirementsOfTheProcedure entity) {
         entity.setId(id);
@@ -41,6 +54,7 @@ public class RequirementsController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('REQUISITO_ELIMINAR')")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.deleteById(id);
         return ResponseEntity.noContent().build();

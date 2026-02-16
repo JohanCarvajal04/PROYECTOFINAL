@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.app.uteq.Dtos.AcademicCalendarResponse;
 import com.app.uteq.Dtos.UAcademicCalendarRequest;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AcademicCalendarServiceImpl implements IAcademicCalendarService {
 
     private final IAcademicCalendarRepository repository;
@@ -57,6 +59,7 @@ public class AcademicCalendarServiceImpl implements IAcademicCalendarService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AcademicCalendarResponse> listarCalendarios(Boolean onlyActive) {
 
         List<Object[]> rows = repository.fnListAcademicCalendar(onlyActive);

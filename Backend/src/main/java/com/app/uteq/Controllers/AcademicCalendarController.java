@@ -28,6 +28,7 @@ public class AcademicCalendarController {
     private final IAcademicCalendarService service;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CAL_CREAR')")
     public ResponseEntity<?> createCalendar(@Valid @RequestBody IAcademicCalendarRequest request){
 
         service.createcalendar(
@@ -42,6 +43,7 @@ public class AcademicCalendarController {
     }
 
     @PutMapping("/{idacademiccalendar}")
+    @PreAuthorize("hasAuthority('CAL_MODIFICAR')")
     public ResponseEntity<?> actualizar(
             @PathVariable Integer idacademiccalendar,
             @Valid @RequestBody UAcademicCalendarRequest request) {
@@ -52,12 +54,14 @@ public class AcademicCalendarController {
 
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('CAL_ELIMINAR')")
     public ResponseEntity<?> eliminar(@PathVariable Integer id) {
         service.deletecalendar(id);
         return ResponseEntity.ok("Calendario eliminado correctamente");
     }
 
     @GetMapping()
+    @PreAuthorize("hasAuthority('CAL_LISTAR')")
     public ResponseEntity<?> listar(@RequestParam(required = false) Boolean onlyActive) {
         return ResponseEntity.ok(service.listarCalendarios(onlyActive));
     }

@@ -27,6 +27,7 @@ public class ProcessingStageController {
 
     // CREATE -> spi_processingstage
     @PostMapping
+    @PreAuthorize("hasAuthority('ETAPA_CREAR')")
     public ResponseEntity<?> create(@Valid @RequestBody CProcessingStageRequest request) {
         service.createProcessingstage(request);
         return ResponseEntity.ok("ProcessingStage creado correctamente");
@@ -34,6 +35,7 @@ public class ProcessingStageController {
 
     // UPDATE -> spu_processingstage
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ETAPA_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @Valid @RequestBody UProcessingStageRequest request) {
@@ -44,6 +46,7 @@ public class ProcessingStageController {
 
     // DELETE -> spd_processingstage
     @DeleteMapping("/{idprocessingstage}")
+    @PreAuthorize("hasAuthority('ETAPA_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idprocessingstage) {
         service.deleteProcessingstage(idprocessingstage);
         return ResponseEntity.ok("ProcessingStage eliminado correctamente");
@@ -51,6 +54,7 @@ public class ProcessingStageController {
 
     // LIST -> fn_list_processingstage
     @GetMapping
+    @PreAuthorize("hasAuthority('ETAPA_LISTAR')")
     public ResponseEntity<?> list() {
         return ResponseEntity.ok(service.listProcessingstage());
     }

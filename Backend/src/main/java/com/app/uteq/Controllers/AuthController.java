@@ -24,6 +24,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,6 +34,7 @@ import com.app.uteq.Entity.RefreshToken;
 import com.app.uteq.Entity.Users;
 import com.app.uteq.Repository.IRefreshTokenRepository;
 import com.app.uteq.Repository.IUsersRepository;
+import com.app.uteq.Services.ICredentialsService;
 import com.app.uteq.Services.ITwoFactorAuthService;
 
 @RestController
@@ -48,6 +50,7 @@ public class AuthController {
     private final IRefreshTokenRepository refreshTokenRepository;
     private final IUsersRepository usersRepository;
     private final ITwoFactorAuthService twoFactorAuthService;
+    private final ICredentialsService credentialsService;
 
     public AuthController(JwtEncoder jwtEncoder,
             JwtDecoder jwtDecoder,
@@ -55,7 +58,8 @@ public class AuthController {
             UserDetailsService userDetailsService,
             IRefreshTokenRepository refreshTokenRepository,
             IUsersRepository usersRepository,
-            ITwoFactorAuthService twoFactorAuthService) {
+            ITwoFactorAuthService twoFactorAuthService,
+            ICredentialsService credentialsService) {
         this.jwtEncoder = jwtEncoder;
         this.jwtDecoder = jwtDecoder;
         this.authenticationManager = authenticationManager;
@@ -63,24 +67,11 @@ public class AuthController {
         this.refreshTokenRepository = refreshTokenRepository;
         this.usersRepository = usersRepository;
         this.twoFactorAuthService = twoFactorAuthService;
+        this.credentialsService = credentialsService;
     }
 
-    /**
-     * Endpoint para obtener tokens JWT.
-     *
-     * Soporta dos grant types:
-     * - "password": Autenticación con email institucional y contraseña.
-     *   Si el usuario tiene 2FA activo, retorna un pre_auth_token en lugar de
-     *   tokens completos. El cliente debe usar POST /auth/2fa-verify para completar.
-     * - "refresh_token": Renovar access token usando un refresh token.
-     *
-     * @param grantType        "password" o "refresh_token"
-     * @param username         Email institucional (requerido para grantType=password)
-     * @param password         Contraseña (requerido para grantType=password)
-     * @param withRefreshToken Si se debe generar un refresh token
-     * @param refreshToken     El refresh token (requerido para grantType=refresh_token)
-     */
     @PostMapping("/token")
+    @Transactional
     public ResponseEntity<Map<String, String>> generateToken(
             @RequestParam String grantType,
             @RequestParam(required = false) String username,
@@ -91,7 +82,6 @@ public class AuthController {
         String subject = null;
         String scope = null;
 
-        // ─── Grant Type: Password ──────────────────────────────
         if ("password".equals(grantType)) {
             if (username == null || password == null) {
                 return ResponseEntity.badRequest()
@@ -107,12 +97,19 @@ public class AuthController {
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.joining(" "));
 
+                // Registrar login exitoso (resetea intentos fallidos)
+                credentialsService.registerSuccessfulLoginByEmail(subject);
+
             } catch (AuthenticationException e) {
+                // Registrar intento fallido (puede bloquear la cuenta)
+                boolean locked = credentialsService.registerFailedAttemptByEmail(username);
+                String errorMsg = locked
+                        ? "Cuenta bloqueada por exceder el máximo de intentos fallidos"
+                        : "Credenciales inválidas";
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("error", "Credenciales inválidas"));
+                        .body(Map.of("error", errorMsg));
             }
 
-            // ─── Verificar si 2FA está activo ──────────────────────
             boolean requires2FA = false;
             try {
                 requires2FA = twoFactorAuthService.is2FAEnabled(subject);
@@ -122,7 +119,6 @@ public class AuthController {
             }
 
             if (requires2FA) {
-                // Generar pre-auth token (5 min, sin scope, no es un access_token válido)
                 Instant now = Instant.now();
                 JwtClaimsSet preAuthClaims = JwtClaimsSet.builder()
                         .subject(subject)
@@ -144,7 +140,6 @@ public class AuthController {
                 return ResponseEntity.ok(preAuthResponse);
             }
 
-            // ─── Grant Type: Refresh Token ─────────────────────────
         } else if ("refresh_token".equals(grantType)) {
             if (refreshToken == null || refreshToken.isBlank()) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -156,48 +151,48 @@ public class AuthController {
                 subject = decodedToken.getSubject();
 
                 var storedToken = refreshTokenRepository.findByToken(refreshToken);
-                if (storedToken.isPresent() && storedToken.get().getRevoked()) {
+                if (storedToken.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(Map.of("error", "Refresh token no encontrado"));
+                }
+                if (storedToken.get().getRevoked()) {
                     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                             .body(Map.of("error", "El refresh token ha sido revocado"));
                 }
+
+                // Rotación de refresh token: revocar el token usado
+                RefreshToken tokenEntity = storedToken.get();
+                tokenEntity.setRevoked(true);
+                refreshTokenRepository.save(tokenEntity);
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(subject);
                 scope = userDetails.getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
                         .collect(Collectors.joining(" "));
 
+                // Forzar generación de nuevo refresh token en la rotación
+                withRefreshToken = true;
+
             } catch (JwtException e) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(Map.of("error", "Refresh token inválido: " + e.getMessage()));
             }
 
-            // ─── Grant Type no soportado ───────────────────────────
         } else {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "Grant type no soportado: " + grantType));
         }
 
-        // ─── Generar tokens completos ──────────────────────────
         return ResponseEntity.ok(generateFullTokens(subject, scope, withRefreshToken));
     }
 
-    /**
-     * Endpoint para completar la autenticación 2FA.
-     *
-     * Recibe el pre_auth_token (obtenido en /token) y el código TOTP de 6 dígitos.
-     * Si el código es válido, retorna access_token + refresh_token completos.
-     *
-     * @param preAuthToken Token de pre-autenticación obtenido del login
-     * @param code         Código TOTP de 6 dígitos de Google Authenticator
-     * @param backupCode   Código de respaldo (alternativa al código TOTP)
-     */
     @PostMapping("/2fa-verify")
+    @Transactional
     public ResponseEntity<Map<String, String>> verify2FA(
             @RequestParam String preAuthToken,
             @RequestParam(required = false) Integer code,
             @RequestParam(required = false) String backupCode) {
 
-        // Validar el pre-auth token
         Jwt decoded;
         try {
             decoded = jwtDecoder.decode(preAuthToken);
@@ -206,7 +201,6 @@ public class AuthController {
                     .body(Map.of("error", "Pre-auth token inválido o expirado"));
         }
 
-        // Verificar que sea un pre_auth token
         String tokenType = decoded.getClaimAsString("token_type");
         if (!"pre_auth".equals(tokenType)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -216,7 +210,6 @@ public class AuthController {
         String subject = decoded.getSubject();
         Boolean withRefreshToken = decoded.getClaim("with_refresh_token");
 
-        // Validar código TOTP o código de respaldo
         boolean valid = false;
 
         if (code != null) {
@@ -230,7 +223,6 @@ public class AuthController {
                     .body(Map.of("error", "Código 2FA inválido"));
         }
 
-        // Recargar authorities del usuario para generar tokens completos
         UserDetails userDetails = userDetailsService.loadUserByUsername(subject);
         String scope = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -240,9 +232,27 @@ public class AuthController {
                 withRefreshToken != null && withRefreshToken));
     }
 
-    // ═══════════════════════════════════════════════════════════
-    // HELPER: Genera access_token + refresh_token
-    // ═══════════════════════════════════════════════════════════
+    /**
+     * Cierra sesión revocando todos los refresh tokens activos del usuario.
+     */
+    @PostMapping("/logout")
+    @Transactional
+    public ResponseEntity<Map<String, String>> logout(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "No autenticado"));
+        }
+
+        String email = authentication.getName();
+        Users user = usersRepository.findByInstitutionalEmail(email).orElse(null);
+
+        if (user != null) {
+            refreshTokenRepository.revokeAllByUser(user);
+            log.info("Sesión cerrada para usuario: {}", email);
+        }
+
+        return ResponseEntity.ok(Map.of("message", "Sesión cerrada exitosamente"));
+    }
 
     private Map<String, String> generateFullTokens(String subject, String scope, boolean withRefreshToken) {
         Instant now = Instant.now();

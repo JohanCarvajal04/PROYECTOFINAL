@@ -262,4 +262,22 @@ public class CredentialsServiceImpl implements ICredentialsService {
                 credentials.getPasswordExpiryDate()
         );
     }
+
+    @Override
+    public boolean registerFailedAttemptByEmail(String email) {
+        var user = usersRepository.findByInstitutionalEmail(email).orElse(null);
+        if (user == null || user.getCredentials() == null) {
+            return false;
+        }
+        return registerFailedAttempt(user.getCredentials().getId());
+    }
+
+    @Override
+    public void registerSuccessfulLoginByEmail(String email) {
+        var user = usersRepository.findByInstitutionalEmail(email).orElse(null);
+        if (user == null || user.getCredentials() == null) {
+            return;
+        }
+        registerSuccessfulLogin(user.getCredentials().getId());
+    }
 }

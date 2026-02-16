@@ -1,17 +1,21 @@
 package com.app.uteq.Services.Impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CStateRequest;
 import com.app.uteq.Dtos.StateResponse;
 import com.app.uteq.Dtos.UStateRequest;
 import com.app.uteq.Repository.IStatesRepository;
 import com.app.uteq.Services.IStatesService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class StatesServiceImpl implements IStatesService {
     private final IStatesRepository repo;
 
@@ -40,6 +44,7 @@ public class StatesServiceImpl implements IStatesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<StateResponse> listStates(String category) {
         List<Object[]> rows = repo.fnListStates(category);
 

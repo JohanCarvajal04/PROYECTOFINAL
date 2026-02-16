@@ -1,17 +1,21 @@
 package com.app.uteq.Services.Impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CFacultyRequest;
 import com.app.uteq.Dtos.FacultyResponse;
 import com.app.uteq.Dtos.UFacultyRequest;
 import com.app.uteq.Repository.IFacultiesRepository;
 import com.app.uteq.Services.IFacultiesService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class FacultiesServiceImpl implements IFacultiesService {
     private final IFacultiesRepository repository;
 
@@ -40,6 +44,7 @@ public class FacultiesServiceImpl implements IFacultiesService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<FacultyResponse> listFaculty() {
         List<Object[]> rows = repository.fnListFaculties();
 

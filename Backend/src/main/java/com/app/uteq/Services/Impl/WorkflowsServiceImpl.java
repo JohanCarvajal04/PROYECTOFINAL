@@ -1,19 +1,23 @@
 package com.app.uteq.Services.Impl;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CWorkflowRequest;
 import com.app.uteq.Dtos.UWorkflowRequest;
 import com.app.uteq.Dtos.WorkflowResponse;
 import com.app.uteq.Repository.IWorkflowsRepository;
 import com.app.uteq.Services.IWorkflowsService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class WorkflowsServiceImpl implements IWorkflowsService {
     private final IWorkflowsRepository repository;
 
@@ -42,6 +46,7 @@ public class WorkflowsServiceImpl implements IWorkflowsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<WorkflowResponse> listWorkflow(Boolean onlyActive) {
         List<Object[]> rows = repository.fnListWorkflows(onlyActive);
 

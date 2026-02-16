@@ -1,17 +1,21 @@
 package com.app.uteq.Services.Impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.app.uteq.Dtos.CProcessingStageRequest;
 import com.app.uteq.Dtos.ProcessingStageResponse;
 import com.app.uteq.Dtos.UProcessingStageRequest;
 import com.app.uteq.Repository.IProcessingStageRepository;
 import com.app.uteq.Services.IProcessingStageService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class ProcessingStageServiceImpl implements IProcessingStageService {
     private final IProcessingStageRepository repository;
 
@@ -46,6 +50,7 @@ public class ProcessingStageServiceImpl implements IProcessingStageService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProcessingStageResponse> listProcessingstage() {
         List<Object[]> rows = repository.fnListProcessingStage();
 
