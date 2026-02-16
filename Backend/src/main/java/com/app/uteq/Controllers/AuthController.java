@@ -1,9 +1,12 @@
 package com.app.uteq.Controllers;
 
-import com.app.uteq.Entity.RefreshToken;
-import com.app.uteq.Entity.Users;
-import com.app.uteq.Repository.IRefreshTokenRepository;
-import com.app.uteq.Repository.IUsersRepository;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,18 +16,21 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.app.uteq.Entity.RefreshToken;
+import com.app.uteq.Entity.Users;
+import com.app.uteq.Repository.IRefreshTokenRepository;
+import com.app.uteq.Repository.IUsersRepository;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -81,7 +87,7 @@ public class AuthController {
         if ("password".equals(grantType)) {
             if (username == null || password == null) {
                 return ResponseEntity.badRequest()
-                        .body(Map.of("error", "username y password son requeridos"));
+                        .body(Map.of("error", "Correo y contraseña son requeridos"));
             }
 
             try {
