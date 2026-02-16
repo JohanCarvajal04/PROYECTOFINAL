@@ -5,6 +5,7 @@ import lombok.Data;
 @Data
 public class UNotificationTypeRequest {
     private Integer idNotificationType;
-    private String typename;
-    private String typedescription;
+    private String nameTypeNotification;
+    private String templateCode;
+    private String priorityLevel;
 }

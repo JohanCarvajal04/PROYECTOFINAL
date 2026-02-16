@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class CNotificationTypeRequest {
-    private String typename;
-    private String typedescription;
+    private String nameTypeNotification;
+    private String templateCode;
+    private String priorityLevel;
 }

@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.app.uteq.Dtos.CStudentRequest;
 import com.app.uteq.Dtos.StudentResponse;
 import com.app.uteq.Dtos.UStudentRequest;
-import com.app.uteq.Entity.Students;
 import com.app.uteq.Services.IStudentsService;
 
 import jakarta.validation.Valid;
@@ -33,22 +32,8 @@ public class StudentsController {
     
     private final IStudentsService service;
 
-    @GetMapping("/legacy")
-    @PreAuthorize("hasAuthority('ESTUDIANTE_LISTAR')")
-    public ResponseEntity<List<Students>> findAllLegacy() {
-        return ResponseEntity.ok(service.findAll());
-    }
-
-    @GetMapping("/legacy/{id}")
-    @PreAuthorize("hasAuthority('ESTUDIANTE_VER')")
-    public ResponseEntity<Students> findByIdLegacy(@PathVariable Integer id) {
-        return service.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
     // ═════════════════════════════════════════════════════════════
-    // NUEVOS ENDPOINTS CON DTOs Y VALIDACIÓN
+    // ENDPOINTS CON DTOs Y VALIDACIÓN
     // ═════════════════════════════════════════════════════════════
 
     @GetMapping

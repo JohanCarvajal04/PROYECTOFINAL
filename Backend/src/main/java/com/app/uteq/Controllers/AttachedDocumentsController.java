@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,13 +20,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.app.uteq.Dtos.AttachedDocumentResponse;
+import com.app.uteq.Dtos.UAttachedDocumentRequest;
 import com.app.uteq.Entity.Applications;
 import com.app.uteq.Entity.AttachedDocuments;
 import com.app.uteq.Entity.RequirementsOfTheProcedure;
 import com.app.uteq.Entity.Users;
+import com.app.uteq.Exceptions.ResourceNotFoundException;
 import com.app.uteq.Services.IAttachedDocumentsService;
 import com.app.uteq.Services.IDriveService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -38,22 +43,17 @@ public class AttachedDocumentsController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('DOCADJ_LISTAR')")
-    public ResponseEntity<List<AttachedDocuments>> findAll() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<List<AttachedDocumentResponse>> findAll() {
+        return ResponseEntity.ok(service.findAll().stream().map(this::toResponse).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('DOCADJ_VER')")
-    public ResponseEntity<AttachedDocuments> findById(@PathVariable Integer id) {
+    public ResponseEntity<AttachedDocumentResponse> findById(@PathVariable Integer id) {
         return service.findById(id)
+                .map(this::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    @PostMapping
-    @PreAuthorize("hasAuthority('DOCADJ_CREAR')")
-    public ResponseEntity<AttachedDocuments> create(@RequestBody AttachedDocuments entity) {
-        return ResponseEntity.ok(service.save(entity));
     }
 
     /**
@@ -84,7 +84,7 @@ public class AttachedDocumentsController {
                     .build();
 
             AttachedDocuments saved = service.save(document);
-            return ResponseEntity.ok(saved);
+            return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(saved));
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
@@ -117,9 +117,17 @@ public class AttachedDocumentsController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('DOCADJ_MODIFICAR')")
-    public ResponseEntity<AttachedDocuments> update(@PathVariable Integer id, @RequestBody AttachedDocuments entity) {
-        entity.setId(id);
-        return ResponseEntity.ok(service.save(entity));
+    public ResponseEntity<AttachedDocumentResponse> update(@PathVariable Integer id, @Valid @RequestBody UAttachedDocumentRequest request) {
+        AttachedDocuments entity = service.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("AttachedDocuments", "id", id));
+        entity.setApplication(Applications.builder().id(request.getApplicationsIdApplication()).build());
+        entity.setRequirement(request.getRequirementId() != null ? RequirementsOfTheProcedure.builder().id(request.getRequirementId()).build() : null);
+        entity.setFileName(request.getFileName());
+        entity.setFilePath(request.getFilePath());
+        entity.setFileSizeBytes(request.getFileSizeBytes());
+        entity.setMimeType(request.getMimeType());
+        entity.setUploadedByUser(Users.builder().idUser(request.getUploadedByUserId()).build());
+        return ResponseEntity.ok(toResponse(service.save(entity)));
     }
 
     /**
@@ -141,5 +149,19 @@ public class AttachedDocumentsController {
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private AttachedDocumentResponse toResponse(AttachedDocuments entity) {
+        return new AttachedDocumentResponse(
+                entity.getId(),
+                entity.getApplication() != null ? entity.getApplication().getId() : null,
+                entity.getRequirement() != null ? entity.getRequirement().getId() : null,
+                entity.getFileName(),
+                entity.getFilePath(),
+                entity.getFileSizeBytes(),
+                entity.getMimeType(),
+                entity.getUploadDate(),
+                entity.getUploadedByUser() != null ? entity.getUploadedByUser().getIdUser() : null
+        );
     }
 }

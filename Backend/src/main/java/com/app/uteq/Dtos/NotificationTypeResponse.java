@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class NotificationTypeResponse {
     private Integer idNotificationType;
-    private String typename;
-    private String typedescription;
+    private String nameTypeNotification;
+    private String templateCode;
+    private String priorityLevel;
 }

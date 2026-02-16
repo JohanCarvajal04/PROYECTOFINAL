@@ -16,6 +16,7 @@ import com.app.uteq.Dtos.CDeadlineRuleRequest;
 import com.app.uteq.Dtos.UDeadlineRuleRequest;
 import com.app.uteq.Services.IDeadLineRulesService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -28,7 +29,7 @@ public class DeadlineruleControllers {
     // CREATE -> spi_deadlinerule
     @PostMapping
     @PreAuthorize("hasAuthority('REGLA_CREAR')")
-    public ResponseEntity<?> create(@RequestBody CDeadlineRuleRequest request) {
+    public ResponseEntity<?> create(@Valid @RequestBody CDeadlineRuleRequest request) {
         service.createDeadlinerule(request);
         return ResponseEntity.ok("Regla creada correctamente");
     }
@@ -38,7 +39,7 @@ public class DeadlineruleControllers {
     @PreAuthorize("hasAuthority('REGLA_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
-            @RequestBody UDeadlineRuleRequest request) {
+            @Valid @RequestBody UDeadlineRuleRequest request) {
         request.setIddeadlinerule(id);
         service.updateDeadlinerule(request);
         return ResponseEntity.ok("Regla actualizada correctamente");

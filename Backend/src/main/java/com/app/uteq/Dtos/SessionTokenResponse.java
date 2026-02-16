@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 public class SessionTokenResponse {
     private Integer idSession;
     private Integer userId;
-    private String token;
     private String ipAddress;
     private String userAgent;
     private LocalDateTime createdAt;

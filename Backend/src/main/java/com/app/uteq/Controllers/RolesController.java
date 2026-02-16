@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.app.uteq.Dtos.CRoleRequest;
 import com.app.uteq.Dtos.RoleResponse;
 import com.app.uteq.Dtos.URoleRequest;
-import com.app.uteq.Entity.Roles;
 import com.app.uteq.Services.IRolesService;
 
 import jakarta.validation.Valid;
@@ -33,25 +32,7 @@ public class RolesController {
     private final IRolesService service;
 
     // ═════════════════════════════════════════════════════════════════
-    // ENDPOINTS LEGACY
-    // ═════════════════════════════════════════════════════════════════
-
-    @GetMapping("/legacy")
-    @PreAuthorize("hasAuthority('ROL_LISTAR')")
-    public ResponseEntity<List<Roles>> findAllLegacy() {
-        return ResponseEntity.ok(service.findAll());
-    }
-
-    @GetMapping("/legacy/{id}")
-    @PreAuthorize("hasAuthority('ROL_VER')")
-    public ResponseEntity<Roles> findByIdLegacy(@PathVariable Integer id) {
-        return service.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // ═════════════════════════════════════════════════════════════════
-    // NUEVOS ENDPOINTS CON DTOs Y VALIDACIÓN
+    // ENDPOINTS CON DTOs Y VALIDACIÓN
     // ═════════════════════════════════════════════════════════════════
 
     @GetMapping

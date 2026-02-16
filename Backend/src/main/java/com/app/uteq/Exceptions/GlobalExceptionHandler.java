@@ -153,14 +153,14 @@ public class GlobalExceptionHandler {
 
         ApiErrorResponse response = ApiErrorResponse.builder()
                 .timestamp(java.time.LocalDateTime.now())
-                .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
+                .status(422)
                 .error("Error de Negocio")
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .errorCode(ex.getErrorCode())
                 .build();
 
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+        return ResponseEntity.status(422).body(response);
     }
 
     @ExceptionHandler(UnauthorizedException.class)

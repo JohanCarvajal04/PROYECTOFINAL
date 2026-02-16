@@ -1,12 +1,8 @@
 package com.app.uteq.Exceptions;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
 /**
  * Excepción para errores de lógica de negocio genéricos.
  */
-@ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
 public class BusinessException extends RuntimeException {
 
     private final String errorCode;

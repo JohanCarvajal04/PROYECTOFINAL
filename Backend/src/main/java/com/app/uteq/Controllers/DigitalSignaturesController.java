@@ -2,6 +2,7 @@ package com.app.uteq.Controllers;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -13,9 +14,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.app.uteq.Dtos.CDigitalSignatureRequest;
+import com.app.uteq.Dtos.DigitalSignatureResponse;
+import com.app.uteq.Dtos.UDigitalSignatureRequest;
 import com.app.uteq.Entity.DigitalSignatures;
+import com.app.uteq.Entity.Users;
+import com.app.uteq.Exceptions.ResourceNotFoundException;
 import com.app.uteq.Services.IDigitalSignaturesService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -27,29 +34,49 @@ public class DigitalSignaturesController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('FIRMA_LISTAR')")
-    public ResponseEntity<List<DigitalSignatures>> findAll() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<List<DigitalSignatureResponse>> findAll() {
+        return ResponseEntity.ok(service.findAll().stream().map(this::toResponse).toList());
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('FIRMA_VER')")
-    public ResponseEntity<DigitalSignatures> findById(@PathVariable Integer id) {
+    public ResponseEntity<DigitalSignatureResponse> findById(@PathVariable Integer id) {
         return service.findById(id)
+                .map(this::toResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @PreAuthorize("hasAuthority('FIRMA_CREAR')")
-    public ResponseEntity<DigitalSignatures> create(@RequestBody DigitalSignatures entity) {
-        return ResponseEntity.ok(service.save(entity));
+    public ResponseEntity<DigitalSignatureResponse> create(@Valid @RequestBody CDigitalSignatureRequest request) {
+        DigitalSignatures entity = DigitalSignatures.builder()
+                .user(Users.builder().idUser(request.getUserIdUser()).build())
+                .certificatePath(request.getCertificatePath())
+                .certificateSerial(request.getCertificateSerial())
+                .issuer(request.getIssuer())
+                .validFrom(request.getValidFrom())
+                .validUntil(request.getValidUntil())
+                .signatureAlgorithm(request.getSignatureAlgorithm())
+                .active(request.getActive())
+                .build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(service.save(entity)));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('FIRMA_MODIFICAR')")
-    public ResponseEntity<DigitalSignatures> update(@PathVariable Integer id, @RequestBody DigitalSignatures entity) {
-        entity.setId(id);
-        return ResponseEntity.ok(service.save(entity));
+    public ResponseEntity<DigitalSignatureResponse> update(@PathVariable Integer id, @Valid @RequestBody UDigitalSignatureRequest request) {
+        DigitalSignatures entity = service.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("DigitalSignatures", "id", id));
+        entity.setUser(Users.builder().idUser(request.getUserIdUser()).build());
+        entity.setCertificatePath(request.getCertificatePath());
+        entity.setCertificateSerial(request.getCertificateSerial());
+        entity.setIssuer(request.getIssuer());
+        entity.setValidFrom(request.getValidFrom());
+        entity.setValidUntil(request.getValidUntil());
+        entity.setSignatureAlgorithm(request.getSignatureAlgorithm());
+        entity.setActive(request.getActive());
+        return ResponseEntity.ok(toResponse(service.save(entity)));
     }
 
     @DeleteMapping("/{id}")
@@ -57,5 +84,20 @@ public class DigitalSignaturesController {
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private DigitalSignatureResponse toResponse(DigitalSignatures entity) {
+        return new DigitalSignatureResponse(
+                entity.getId(),
+                entity.getUser() != null ? entity.getUser().getIdUser() : null,
+                entity.getCertificatePath(),
+                entity.getCertificateSerial(),
+                entity.getIssuer(),
+                entity.getValidFrom(),
+                entity.getValidUntil(),
+                entity.getSignatureAlgorithm(),
+                entity.getActive(),
+                entity.getCreatedAt()
+        );
     }
 }

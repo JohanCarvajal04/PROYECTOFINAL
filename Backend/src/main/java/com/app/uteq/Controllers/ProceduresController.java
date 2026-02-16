@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.app.uteq.Dtos.CProcedureRequest;
 import com.app.uteq.Dtos.ProcedureResponse;
 import com.app.uteq.Dtos.UProcedureRequest;
-import com.app.uteq.Entity.Procedures;
 import com.app.uteq.Services.IProceduresService;
 
 import jakarta.validation.Valid;
@@ -33,25 +32,7 @@ public class ProceduresController {
     private final IProceduresService service;
 
     // ═════════════════════════════════════════════════════════════
-    // ENDPOINTS LEGACY
-    // ═════════════════════════════════════════════════════════════
-
-    @GetMapping("/legacy")
-    @PreAuthorize("hasAuthority('TRAMITE_LISTAR')")
-    public ResponseEntity<List<Procedures>> findAllLegacy() {
-        return ResponseEntity.ok(service.findAll());
-    }
-
-    @GetMapping("/legacy/{id}")
-    @PreAuthorize("hasAuthority('TRAMITE_VER')")
-    public ResponseEntity<Procedures> findByIdLegacy(@PathVariable Integer id) {
-        return service.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    // ═════════════════════════════════════════════════════════════
-    // NUEVOS ENDPOINTS CON DTOs Y VALIDACIÓN
+    // ENDPOINTS CON DTOs Y VALIDACIÓN
     // ═════════════════════════════════════════════════════════════
 
     @GetMapping
