@@ -3,9 +3,13 @@ package com.app.uteq.Controllers;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 public class TwoFactorAuthController {
 
     private final ITwoFactorAuthService twoFactorAuthService;
+    private final JwtDecoder jwtDecoder;
 
     // ═══════════════════════════════════════════════════════════
     // CONFIGURACIÓN (requiere JWT)
@@ -111,24 +116,55 @@ public class TwoFactorAuthController {
 
     /**
      * Valida un código TOTP durante el flujo de login con 2FA.
-     * Se usa junto con el pre_auth_token del AuthController.
+     * Requiere el pre_auth_token emitido por AuthController (evita enumeración de usuarios).
      */
     @PostMapping("/validate")
     public ResponseEntity<Map<String, Object>> validateCode(
-            @RequestParam String email,
+            @RequestParam String preAuthToken,
             @Valid @RequestBody TwoFactorVerifyRequest request) {
+
+        String email = extractEmailFromPreAuthToken(preAuthToken);
+        if (email == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("valid", false, "error", "Pre-auth token inválido o expirado"));
+        }
+
         boolean valid = twoFactorAuthService.validateCode(email, request.getCode());
         return ResponseEntity.ok(Map.of("valid", valid));
     }
 
     /**
      * Valida un código de respaldo durante el flujo de login con 2FA.
+     * Requiere el pre_auth_token emitido por AuthController (evita enumeración de usuarios).
      */
     @PostMapping("/validate-backup")
     public ResponseEntity<Map<String, Object>> validateBackupCode(
-            @RequestParam String email,
+            @RequestParam String preAuthToken,
             @Valid @RequestBody TwoFactorBackupRequest request) {
+
+        String email = extractEmailFromPreAuthToken(preAuthToken);
+        if (email == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("valid", false, "error", "Pre-auth token inválido o expirado"));
+        }
+
         boolean valid = twoFactorAuthService.validateBackupCode(email, request.getBackupCode());
         return ResponseEntity.ok(Map.of("valid", valid));
+    }
+
+    /**
+     * Extrae el email (subject) del pre_auth_token JWT, validando que sea de tipo "pre_auth".
+     */
+    private String extractEmailFromPreAuthToken(String preAuthToken) {
+        try {
+            Jwt decoded = jwtDecoder.decode(preAuthToken);
+            String tokenType = decoded.getClaimAsString("token_type");
+            if (!"pre_auth".equals(tokenType)) {
+                return null;
+            }
+            return decoded.getSubject();
+        } catch (JwtException e) {
+            return null;
+        }
     }
 }

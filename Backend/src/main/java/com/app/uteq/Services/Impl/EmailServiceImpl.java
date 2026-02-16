@@ -52,6 +52,7 @@ public class EmailServiceImpl implements IEmailService {
     @Override
     public void sendCredentials(String to, String loginEmail, String tempPassword) {
         SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(from);
         msg.setTo(to);
         msg.setSubject("Credenciales de acceso");
 
