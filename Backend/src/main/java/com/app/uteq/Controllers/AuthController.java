@@ -247,7 +247,7 @@ public class AuthController {
         Users user = usersRepository.findByInstitutionalEmail(email).orElse(null);
 
         if (user != null) {
-            refreshTokenRepository.revokeAllByUser(user);
+            refreshTokenRepository.revokeAllByUser(user.getIdUser());
             log.info("Sesión cerrada para usuario: {}", email);
         }
 
