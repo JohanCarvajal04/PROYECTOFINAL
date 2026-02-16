@@ -1,0 +1,17 @@
+          spring:
+            mail:
+              host: smtp.gmail.com
+              port: 587
+              username: kalsjise7@gmail.com
+              password: ${MAIL_PASSWORD}   # ponlo como variable de entorno
+              properties:
+                mail:
+                  transport:
+                    protocol: smtp
+                  smtp:
+                    auth: true
+                    starttls:
+                      enable: true
+                    localhost: app.localdomain   # ayuda con el EHLO/HELO
+                  debug: true
+
