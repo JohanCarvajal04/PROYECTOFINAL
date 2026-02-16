@@ -1,16 +1,18 @@
 package com.app.uteq.Services.Impl;
 
-import com.app.uteq.Entity.Roles;
-import com.app.uteq.Entity.Users;
-import com.app.uteq.Repository.IUsersRepository;
+import java.util.stream.Collectors;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.stream.Collectors;
+import com.app.uteq.Entity.Roles;
+import com.app.uteq.Entity.Users;
+import com.app.uteq.Repository.IUsersRepository;
 
 /**
  * UserDetailsService respaldado por JPA.
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
  * El "username" es el institutionalEmail del usuario.
  */
 @Service
+@Transactional(readOnly = true)
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final IUsersRepository usersRepository;

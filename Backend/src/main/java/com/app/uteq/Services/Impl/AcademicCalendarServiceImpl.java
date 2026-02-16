@@ -1,15 +1,18 @@
 package com.app.uteq.Services.Impl;
 
-import com.app.uteq.Dtos.AcademicCalendarResponse;
-import com.app.uteq.Dtos.UAcademicCalendarRequest;
-import com.app.uteq.Repository.IAcademicCalendarRepository;
-import com.app.uteq.Services.IAcademicCalendarService;
-import lombok.RequiredArgsConstructor;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.sql.Date;
-import java.util.List;
+import com.app.uteq.Dtos.AcademicCalendarResponse;
+import com.app.uteq.Dtos.UAcademicCalendarRequest;
+import com.app.uteq.Exceptions.BadRequestException;
+import com.app.uteq.Repository.IAcademicCalendarRepository;
+import com.app.uteq.Services.IAcademicCalendarService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -26,10 +29,10 @@ public class AcademicCalendarServiceImpl implements IAcademicCalendarService {
 
         // Validaciones de capa backend (rápidas)
         if(calendarname == null || calendarname.isBlank())
-            throw new RuntimeException("Debe ingresar el nombre del calendario");
+            throw new BadRequestException("Debe ingresar el nombre del calendario");
 
         if(academicperiod == null || academicperiod.isBlank())
-            throw new RuntimeException("Debe ingresar el periodo académico");
+            throw new BadRequestException("Debe ingresar el periodo académico");
 
         // Llamada al Stored Procedure
         repository.spiCreateCalendar(

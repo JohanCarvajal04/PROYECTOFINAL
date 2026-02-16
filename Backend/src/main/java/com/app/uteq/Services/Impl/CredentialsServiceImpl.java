@@ -16,7 +16,9 @@ import com.app.uteq.Dtos.CredentialResponse;
 import com.app.uteq.Entity.Credentials;
 import com.app.uteq.Exceptions.BadRequestException;
 import com.app.uteq.Exceptions.ResourceNotFoundException;
+import com.app.uteq.Exceptions.UnauthorizedException;
 import com.app.uteq.Repository.ICredentialsRepository;
+import com.app.uteq.Repository.IUsersRepository;
 import com.app.uteq.Services.ICredentialsService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class CredentialsServiceImpl implements ICredentialsService {
 
     private final ICredentialsRepository credentialsRepository;
+    private final IUsersRepository usersRepository;
     private final PasswordEncoder passwordEncoder;
 
     // Configuración de seguridad
@@ -200,6 +203,23 @@ public class CredentialsServiceImpl implements ICredentialsService {
         }
 
         return LocalDate.now().isAfter(credentials.getPasswordExpiryDate());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public void verifyCredentialOwnership(Integer credentialId, String authenticatedEmail) {
+        var user = usersRepository.findByInstitutionalEmail(authenticatedEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario", "email", authenticatedEmail));
+
+        // Admins pueden cambiar cualquier contraseña
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(r -> "ROLE_ADMIN".equals(r.getRoleName()));
+        if (isAdmin) return;
+
+        // Verificar que la credencial pertenezca al usuario autenticado
+        if (user.getCredentials() == null || !user.getCredentials().getId().equals(credentialId)) {
+            throw new UnauthorizedException("No tiene permisos para modificar esta credencial");
+        }
     }
 
     // ═══════════════════════════════════════════════════════════

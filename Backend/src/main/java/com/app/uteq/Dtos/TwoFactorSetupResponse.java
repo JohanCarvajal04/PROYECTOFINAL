@@ -1,17 +1,19 @@
 package com.app.uteq.Dtos;
 
-import java.time.LocalDateTime;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TwoFactorAuthResponse {
-    private Boolean enabled;
-    private LocalDateTime verifiedAt;
+public class TwoFactorSetupResponse {
+
+    private String secretKey;
+    private String qrCodeUri;
+    private List<String> backupCodes;
 }

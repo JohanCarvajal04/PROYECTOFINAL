@@ -73,4 +73,10 @@ public interface ICredentialsService {
      * Verifica si la contraseña ha expirado.
      */
     boolean isPasswordExpired(Integer id);
+
+    /**
+     * Verifica que el usuario autenticado es dueño de la credencial.
+     * @throws UnauthorizedException si no es el dueño ni un ADMIN
+     */
+    void verifyCredentialOwnership(Integer credentialId, String authenticatedEmail);
 }

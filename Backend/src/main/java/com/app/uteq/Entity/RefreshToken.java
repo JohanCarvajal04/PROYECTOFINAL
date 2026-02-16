@@ -40,7 +40,7 @@ public class RefreshToken {
     @Column(name = "revoked", nullable = false)
     private Boolean revoked;
 
-    @Column(name = "token", nullable = false, unique = true, length = 500)
+    @Column(name = "token", nullable = false, unique = true, columnDefinition = "TEXT")
     private String token;
 
     @ManyToOne

@@ -1,13 +1,23 @@
 package com.app.uteq.Entity;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import com.app.uteq.Config.StringListConverter;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Data
@@ -33,7 +43,8 @@ public class TwoFactorAuth {
     @Column(name = "secretkey", columnDefinition = "TEXT")
     private String secretKey;
 
-    @Column(name = "backupcodes", columnDefinition = "TEXT[]")
+    @Convert(converter = StringListConverter.class)
+    @Column(name = "backupcodes", columnDefinition = "TEXT")
     private List<String> backupCodes;
 
     @Column(name = "verifiedat")

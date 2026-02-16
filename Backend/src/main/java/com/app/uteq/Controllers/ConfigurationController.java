@@ -40,7 +40,7 @@ public class ConfigurationController {
         return ResponseEntity.ok("Configuración actualizada correctamente");
     }
 
-    @DeleteMapping("{idconfiguration}")
+    @DeleteMapping("/{idconfiguration}")
     public ResponseEntity<?> delete(@PathVariable Integer idconfiguration) {
         service.deleteConfiguration(idconfiguration);
         return ResponseEntity.ok("Configuración eliminada correctamente");

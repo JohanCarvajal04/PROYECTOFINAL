@@ -225,11 +225,10 @@ public class ProceduresServiceImpl implements IProceduresService {
     // ═════════════════════════════════════════════════════════════
 
     private String generateProcedureCode(String name) {
-        // Generar código basado en las primeras letras del nombre + timestamp
-        String prefix = name.replaceAll("[^A-Za-z]", "")
-                .toUpperCase()
-                .substring(0, Math.min(name.length(), 4));
-        return prefix + "-" + System.currentTimeMillis() % 10000;
+        // Generar código basado en las primeras letras del nombre + UUID
+        String cleaned = name.replaceAll("[^A-Za-z]", "").toUpperCase();
+        String prefix = cleaned.isEmpty() ? "PROC" : cleaned.substring(0, Math.min(cleaned.length(), 4));
+        return prefix + "-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
     private ProcedureResponse toProcedureResponse(Procedures procedure) {

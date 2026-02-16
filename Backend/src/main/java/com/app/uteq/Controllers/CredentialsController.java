@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.app.uteq.Dtos.CCredentialRequest;
 import com.app.uteq.Dtos.CredentialResponse;
-import com.app.uteq.Entity.Credentials;
 import com.app.uteq.Services.ICredentialsService;
 
 import jakarta.validation.Valid;
@@ -31,22 +31,10 @@ public class CredentialsController {
     private final ICredentialsService service;
 
     // ═════════════════════════════════════════════════════════════
-    // ENDPOINTS LEGACY
+    // ENDPOINTS LEGACY (DESHABILITADOS POR SEGURIDAD)
+    // Los endpoints legacy exponían passwordHash en la respuesta.
+    // Use los endpoints con DTOs a continuación.
     // ═════════════════════════════════════════════════════════════
-
-    @GetMapping("/legacy")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<Credentials>> findAllLegacy() {
-        return ResponseEntity.ok(service.findAll());
-    }
-
-    @GetMapping("/legacy/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Credentials> findByIdLegacy(@PathVariable Integer id) {
-        return service.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
 
     // ═════════════════════════════════════════════════════════════
     // NUEVOS ENDPOINTS CON DTOs Y VALIDACIÓN
@@ -78,7 +66,10 @@ public class CredentialsController {
     @PostMapping("/{id}/change-password")
     public ResponseEntity<CredentialResponse> changePassword(
             @PathVariable Integer id,
-            @RequestBody Map<String, String> passwordRequest) {
+            @RequestBody Map<String, String> passwordRequest,
+            Authentication authentication) {
+        // Verificar que el usuario autenticado sea dueño de la credencial o sea ADMIN
+        service.verifyCredentialOwnership(id, authentication.getName());
         String currentPassword = passwordRequest.get("currentPassword");
         String newPassword = passwordRequest.get("newPassword");
         return ResponseEntity.ok(service.changePassword(id, currentPassword, newPassword));

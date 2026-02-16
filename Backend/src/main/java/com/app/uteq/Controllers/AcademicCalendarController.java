@@ -61,14 +61,4 @@ public class AcademicCalendarController {
     public ResponseEntity<?> listar(@RequestParam(required = false) Boolean onlyActive) {
         return ResponseEntity.ok(service.listarCalendarios(onlyActive));
     }
-//    public ResponseEntity<?> createCalendar(
-//            @RequestParam String name,
-//            @RequestParam String period,
-//            @RequestParam LocalDate start,
-//            @RequestParam LocalDate end,
-//            @RequestParam(required = false) Boolean active
-//    ){
-//        service.createcalendar(name, period, start, end, active);
-//        return ResponseEntity.ok("Calendario creado correctamente");
-//    }
 }
