@@ -78,6 +78,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/api/v1/2fa/validate").permitAll()
                         .requestMatchers("/api/v1/2fa/validate-backup").permitAll()
+                        .requestMatchers("/api/v1/users/**").permitAll()
                         .anyRequest().authenticated())
                 // Sesiones stateless (cada request se autentica via JWT)
                 .sessionManagement(sess -> sess

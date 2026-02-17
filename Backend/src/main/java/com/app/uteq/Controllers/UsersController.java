@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
-@PreAuthorize("isAuthenticated()")
+//@PreAuthorize("isAuthenticated()")
 public class UsersController {
     private final IUsersService service;
 
@@ -43,7 +43,7 @@ public class UsersController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('USUARIO_CREAR')")
+    //@PreAuthorize("hasAuthority('USUARIO_CREAR')")
     public ResponseEntity<UserResponse> create(@Valid @RequestBody CUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(service.createUser(request));
