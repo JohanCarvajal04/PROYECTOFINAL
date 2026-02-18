@@ -1,11 +1,11 @@
 package com.app.uteq.Dtos;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
@@ -17,4 +17,5 @@ public class CredentialResponse {
     private Integer failedAttempts;
     private Boolean accountLocked;
     private LocalDate passwordExpiryDate;
+    private Boolean active;
 }

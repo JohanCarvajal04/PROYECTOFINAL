@@ -259,7 +259,8 @@ public class CredentialsServiceImpl implements ICredentialsService {
                 credentials.getLastLogin(),
                 credentials.getFailedAttempts(),
                 credentials.getAccountLocked(),
-                credentials.getPasswordExpiryDate()
+                credentials.getPasswordExpiryDate(),
+                credentials.getActive()
         );
     }
 
