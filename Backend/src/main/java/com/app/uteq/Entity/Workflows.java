@@ -26,8 +26,11 @@ public class Workflows {
     @Column(name = "workflowdescription")
     private String workflowDescription;
 
-    @Column(name = "createdat", nullable = false)
+    @Column(name = "createdat")
     private LocalDateTime createdAt;
+
+    @Column(name = "updatedat")
+    private LocalDateTime updatedAt;
 
     @Column(name = "active", nullable = false)
     private Boolean active = true;

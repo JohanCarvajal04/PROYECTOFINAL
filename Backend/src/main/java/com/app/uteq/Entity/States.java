@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "states")
@@ -26,4 +27,10 @@ public class States {
 
     @Column(name = "statecategory", nullable = false, length = 50)
     private String stateCategory;
+
+    @Column(name = "createdat")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updatedat")
+    private LocalDateTime updatedAt;
 }

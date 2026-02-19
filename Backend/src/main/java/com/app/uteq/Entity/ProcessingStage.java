@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "processingstage")
@@ -36,4 +37,10 @@ public class ProcessingStage {
 
     @Column(name = "maxdurationdays")
     private Integer maxDurationDays;
+
+    @Column(name = "createdat")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updatedat")
+    private LocalDateTime updatedAt;
 }

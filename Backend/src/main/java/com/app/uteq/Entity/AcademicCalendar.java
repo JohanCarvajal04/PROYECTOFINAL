@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -35,5 +36,11 @@ public class AcademicCalendar {
 
     @Column(name = "active", nullable = false)
     private Boolean active = true;
+
+    @Column(name = "createdat")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updatedat")
+    private LocalDateTime updatedAt;
 
 }

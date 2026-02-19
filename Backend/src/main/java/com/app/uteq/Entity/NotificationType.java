@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Data
-@Table
+@Table(name = "notificationtype")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

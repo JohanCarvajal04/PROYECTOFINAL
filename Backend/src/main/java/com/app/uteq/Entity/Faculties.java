@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -26,8 +27,13 @@ public class Faculties {
     private String facultyCode;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "deaniduser")
     @JsonIgnore
     private Users dean;
+
+    @Column(name = "createdat")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updatedat")
+    private LocalDateTime updatedAt;
 
 }

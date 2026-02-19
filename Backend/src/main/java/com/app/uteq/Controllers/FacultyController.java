@@ -6,6 +6,7 @@ import com.app.uteq.Services.IFacultiesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/faculty")
@@ -15,6 +16,7 @@ public class FacultyController {
 
     // CREATE -> spi_faculty
     @PostMapping
+    @PreAuthorize("hasAuthority('FACULTAD_CREAR')")
     public ResponseEntity<?> create(@RequestBody CFacultyRequest request) {
         service.createFaculty(request);
         return ResponseEntity.ok("Facultad creada correctamente");
@@ -22,6 +24,7 @@ public class FacultyController {
 
     // UPDATE -> spu_faculty
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('FACULTAD_MODIFICAR')")
     public ResponseEntity<?> update(
             @PathVariable Integer id,
             @RequestBody UFacultyRequest request) {
@@ -32,6 +35,7 @@ public class FacultyController {
 
     // DELETE -> spd_faculty
     @DeleteMapping("/{idfaculty}")
+    @PreAuthorize("hasAuthority('FACULTAD_ELIMINAR')")
     public ResponseEntity<?> delete(@PathVariable Integer idfaculty) {
         service.deleteFaculty(idfaculty);
         return ResponseEntity.ok("Facultad eliminada correctamente");
@@ -39,6 +43,7 @@ public class FacultyController {
 
     // LIST -> fn_list_faculties
     @GetMapping
+    @PreAuthorize("hasAuthority('FACULTAD_LISTAR')")
     public ResponseEntity<?> list() {
         return ResponseEntity.ok(service.listFaculty());
     }
