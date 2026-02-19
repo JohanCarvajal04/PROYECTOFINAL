@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/")
 public class HomeController {
 
-    private static final String VERSION = "1.0.0";
+    private static final String VERSION = "3.2.2";
 
     @GetMapping
     public String home() {
